@@ -128,3 +128,9 @@ async def finish_workout(
         payload = []
     await workout_service.finalize_workout_with_sets(db, workout_id, payload, workout_minutes)
     return RedirectResponse(url="/exercise", status_code=303)
+
+
+@router.post("/{workout_id}/delete")
+async def cancel_workout(workout_id: str, db: AsyncSession = Depends(get_session)):
+    await workout_service.delete_workout(db, workout_id)
+    return RedirectResponse(url="/exercise", status_code=303)

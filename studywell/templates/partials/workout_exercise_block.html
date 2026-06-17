@@ -18,7 +18,13 @@
   </div>
 
   <!-- Set table -->
-  <table class="w-full text-sm mb-3">
+  <table class="w-full text-sm mb-3 table-fixed">
+    <colgroup>
+      <col class="w-16" />
+      <col class="w-28" />
+      {% if is_weighted or is_bodyweight %}<col class="w-32" />{% endif %}
+      <col />
+    </colgroup>
     <thead>
       <tr class="text-left text-gray-400 border-b text-xs uppercase">
         <th class="pb-1">Set</th>

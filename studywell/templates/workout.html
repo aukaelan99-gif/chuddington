@@ -23,6 +23,12 @@
       ✓ Finish Workout
     </button>
   </form>
+  <form action="/workout/{{ workout.id }}/delete" method="post">
+    <button type="submit"
+            class="px-4 py-2 bg-rose-100 text-rose-700 rounded-lg hover:bg-rose-200 font-medium text-sm">
+      Cancel Workout
+    </button>
+  </form>
 </div>
 
 <!-- Add exercise panel -->
@@ -148,6 +154,7 @@ function addPlannedSet(exId, exType) {
 
 function prepareFinish(evt) {
   const payload = [];
+  let totalSets = 0;
   document.querySelectorAll('[data-exercise-block]').forEach(block => {
     const exId = block.getAttribute('data-exercise-id');
     const exType = block.getAttribute('data-exercise-type');
@@ -161,9 +168,16 @@ function prepareFinish(evt) {
         reps: repsEl ? repsEl.value : null,
         weight_kg: ((exType === 'weighted' || exType === 'bodyweight') && weightEl) ? weightEl.value : null,
       });
+      totalSets += 1;
     });
     payload.push({ exercise_id: exId, sets });
   });
+
+  if (totalSets === 0) {
+    evt.preventDefault();
+    alert('Add at least one set before finishing the workout.');
+    return;
+  }
 
   const minutesInput = document.getElementById('workout-minutes');
   if (!minutesInput.value) {

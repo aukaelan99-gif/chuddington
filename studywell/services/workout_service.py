@@ -191,6 +191,7 @@ async def finalize_workout_with_sets(
             await db.delete(s)
     await db.flush()
 
+    total_sets = 0
     for ex_data in sets_payload:
         ex_id = ex_data.get("exercise_id")
         ex = next((row for row in workout.exercises if row.id == ex_id), None)
@@ -209,6 +210,11 @@ async def finalize_workout_with_sets(
                     duration_minutes=None,
                 )
             )
+            total_sets += 1
+
+    if total_sets == 0:
+        await db.rollback()
+        return
 
     workout.duration_minutes = workout_minutes
     workout.finished = True
@@ -234,10 +240,10 @@ async def get_daily_minutes_last_7(db: AsyncSession) -> list[int]:
     for offset in range(6, -1, -1):
         day = today - timedelta(days=offset)
         r = await db.execute(
-            select(func.sum(WorkoutSet.duration_minutes))
-            .join(WorkoutExercise, WorkoutExercise.id == WorkoutSet.exercise_id)
-            .join(Workout, Workout.id == WorkoutExercise.workout_id)
-            .where(Workout.date == day, Workout.finished == True)
+            select(func.sum(Workout.duration_minutes)).where(
+                Workout.date == day,
+                Workout.finished == True,
+            )
         )
         out.append(int(r.scalar() or 0))
     return out
@@ -248,10 +254,10 @@ async def get_weekly_total_minutes(db: AsyncSession) -> int:
 
     since = date.today() - timedelta(days=6)
     r = await db.execute(
-        select(func.sum(WorkoutSet.duration_minutes))
-        .join(WorkoutExercise, WorkoutExercise.id == WorkoutSet.exercise_id)
-        .join(Workout, Workout.id == WorkoutExercise.workout_id)
-        .where(Workout.date >= since, Workout.finished == True)
+        select(func.sum(Workout.duration_minutes)).where(
+            Workout.date >= since,
+            Workout.finished == True,
+        )
     )
     return int(r.scalar() or 0)
 
@@ -284,3 +290,11 @@ async def get_muscle_distribution_last_7(db: AsyncSession) -> dict[str, int]:
         .group_by(WorkoutExercise.muscle_group)
     )
     return {row[0].value if row[0] else "other": int(row[1]) for row in r.all()}
+
+
+async def delete_workout(db: AsyncSession, workout_id: str) -> None:
+    w = await db.get(Workout, workout_id)
+    if not w:
+        return
+    await db.delete(w)
+    await db.commit()
