@@ -1,4 +1,5 @@
 from datetime import date
+import json
 from fastapi import APIRouter, Request, Depends, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,8 +22,13 @@ async def new_workout(
 
 
 @router.get("/search", response_class=HTMLResponse)
-async def search_exercises(request: Request, q: str = "", db: AsyncSession = Depends(get_session)):
-    results = await workout_service.search_exercises(db, q)
+async def search_exercises(
+    request: Request,
+    q: str = "",
+    muscle_group: str = "all",
+    db: AsyncSession = Depends(get_session),
+):
+    results = await workout_service.search_exercises(db, q, muscle_group)
     return templates.TemplateResponse(
         request,
         "partials/workout_search_results.html",
@@ -110,6 +116,14 @@ async def remove_set(
 
 
 @router.post("/{workout_id}/finish")
-async def finish_workout(workout_id: str, db: AsyncSession = Depends(get_session)):
-    await workout_service.finish_workout(db, workout_id)
+async def finish_workout(
+    workout_id: str,
+    sets_payload: str = Form("[]"),
+    db: AsyncSession = Depends(get_session),
+):
+    try:
+        payload = json.loads(sets_payload)
+    except json.JSONDecodeError:
+        payload = []
+    await workout_service.finalize_workout_with_sets(db, workout_id, payload)
     return RedirectResponse(url="/exercise", status_code=303)

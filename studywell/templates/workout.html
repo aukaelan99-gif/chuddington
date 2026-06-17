@@ -6,7 +6,9 @@
     {% if workout.name %}{{ workout.name }}{% else %}Workout Session{% endif %}
   </h1>
   <form action="/workout/{{ workout.id }}/finish" method="post">
+    <input type="hidden" id="sets-payload" name="sets_payload" value="[]" />
     <button type="submit"
+            onclick="prepareFinish(event)"
             class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium text-sm">
       ✓ Finish Workout
     </button>
@@ -19,13 +21,36 @@
 
   <!-- Search bar -->
   <div class="relative mb-3">
-    <input id="ex-search" type="text" placeholder="Search exercise…" autocomplete="off"
+    <div class="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-2">
+      <input id="ex-search" type="text" placeholder="Search exercise..." autocomplete="off"
            class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
            hx-get="/workout/search"
-           hx-trigger="keyup changed delay:200ms"
+           hx-trigger="focus, keyup changed delay:200ms"
            hx-target="#ex-suggestions"
-            hx-swap="innerHTML"
+           hx-swap="innerHTML"
+           hx-include="#ex-filter"
            name="q" />
+      <select id="ex-filter" name="muscle_group"
+              class="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              hx-get="/workout/search"
+              hx-trigger="change"
+              hx-target="#ex-suggestions"
+              hx-swap="innerHTML"
+              hx-include="#ex-search">
+        <option value="all">All Muscle Groups</option>
+        <option value="cardio">Cardio</option>
+        <option value="chest">Chest</option>
+        <option value="back">Back</option>
+        <option value="shoulders">Shoulders</option>
+        <option value="biceps">Biceps</option>
+        <option value="triceps">Triceps</option>
+        <option value="quads">Quads</option>
+        <option value="hamstrings">Hamstrings</option>
+        <option value="glutes">Glutes</option>
+        <option value="core">Core</option>
+        <option value="full_body">Full Body</option>
+      </select>
+    </div>
     <ul id="ex-suggestions"
           class="absolute z-20 w-full bg-white border rounded-lg shadow-lg mt-1 hidden max-h-56 overflow-y-auto"></ul>
   </div>
@@ -72,6 +97,65 @@ function fillExercise(name, type, muscle) {
   document.getElementById('ex-muscle-input').value = muscle;
   htmx.trigger(document.getElementById('add-exercise-form'), 'submit');
   document.getElementById('ex-suggestions').classList.add('hidden');
+}
+
+function renumberSets(exId) {
+  const rows = document.querySelectorAll(`#sets-${exId} tr[data-set-row]`);
+  rows.forEach((row, i) => {
+    const n = row.querySelector('[data-set-number]');
+    if (n) n.textContent = String(i + 1);
+  });
+}
+
+function addPlannedSet(exId, exType) {
+  const tbody = document.getElementById(`sets-${exId}`);
+  if (!tbody) return;
+  const row = document.createElement('tr');
+  row.setAttribute('data-set-row', '1');
+  row.className = 'border-b hover:bg-gray-50 text-sm';
+
+  const repsCell = exType !== 'cardio'
+    ? `<input type="number" data-reps min="1" max="999" placeholder="Reps" class="w-20 border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />`
+    : `<input type="number" data-reps min="1" max="999" placeholder="Reps" class="w-20 border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />`;
+
+  const weightCell = exType === 'weighted'
+    ? `<input type="number" data-weight step="0.5" min="0" max="1000" placeholder="Weight" class="w-24 border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />`
+    : ``;
+
+  row.innerHTML = `
+    <td class="py-1.5 text-gray-500 align-middle" data-set-number></td>
+    <td colspan="${exType === 'weighted' ? '3' : (exType === 'cardio' ? '1' : '2')}" class="py-1.5">
+      <div class="flex flex-wrap items-center gap-2">
+        ${repsCell}
+        ${weightCell}
+        <button type="button" class="px-2.5 py-1 bg-rose-100 text-rose-700 rounded-lg hover:bg-rose-200 text-xs font-semibold"
+                onclick="this.closest('tr').remove(); renumberSets('${exId}')">Remove</button>
+      </div>
+    </td>
+  `;
+  tbody.appendChild(row);
+  renumberSets(exId);
+}
+
+function prepareFinish(evt) {
+  const payload = [];
+  document.querySelectorAll('[data-exercise-block]').forEach(block => {
+    const exId = block.getAttribute('data-exercise-id');
+    const exType = block.getAttribute('data-exercise-type');
+    const rows = block.querySelectorAll('tbody tr[data-set-row]');
+    const sets = [];
+    rows.forEach((row, idx) => {
+      const repsEl = row.querySelector('[data-reps]');
+      const weightEl = row.querySelector('[data-weight]');
+      sets.push({
+        set_number: idx + 1,
+        reps: repsEl ? repsEl.value : null,
+        weight_kg: (exType === 'weighted' && weightEl) ? weightEl.value : null,
+      });
+    });
+    payload.push({ exercise_id: exId, sets });
+  });
+  document.getElementById('sets-payload').value = JSON.stringify(payload);
 }
 </script>
 {% endblock %}

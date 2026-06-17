@@ -1,41 +1,25 @@
 {% set is_weighted   = ex.exercise_type.value == "weighted" %}
 {% set is_bodyweight = ex.exercise_type.value == "bodyweight" %}
 {% set is_cardio     = ex.exercise_type.value == "cardio" %}
-<tr id="set-row-{{ s.id }}" class="border-b hover:bg-gray-50 text-sm">
-  <td class="py-1.5 text-gray-500 align-middle">{{ s.set_number }}</td>
+<tr class="border-b hover:bg-gray-50 text-sm" data-set-row="1">
+  <td class="py-1.5 text-gray-500 align-middle" data-set-number>{{ s.set_number }}</td>
   <td colspan="{% if is_weighted %}3{% elif is_cardio %}1{% else %}2{% endif %}" class="py-1.5">
-    <form hx-post="/workout/{{ workout_id }}/exercise/{{ ex.id }}/set/{{ s.id }}/save"
-          hx-target="#set-row-{{ s.id }}"
-          hx-swap="outerHTML"
-          class="flex flex-wrap items-center gap-2">
-      {% if not is_cardio %}
-      <input type="number" name="reps" min="1" max="999" value="{{ s.reps if s.reps is not none else '' }}"
+    <div class="flex flex-wrap items-center gap-2">
+      <input type="number" data-reps min="1" max="999" value="{{ s.reps if s.reps is not none else '' }}"
              placeholder="Reps"
              class="w-20 border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
-      {% endif %}
 
       {% if is_weighted %}
-      <input type="number" name="weight_kg" step="0.5" min="0" max="1000" value="{{ s.weight_kg if s.weight_kg is not none else '' }}"
+      <input type="number" data-weight step="0.5" min="0" max="1000" value="{{ s.weight_kg if s.weight_kg is not none else '' }}"
              placeholder="Weight"
              class="w-24 border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
       {% endif %}
 
-      <input type="number" name="duration_minutes" step="0.5" min="0" max="600" value="{{ s.duration_minutes if s.duration_minutes is not none else '' }}"
-             placeholder="Duration"
-             class="w-24 border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
-
-      <button type="submit"
-              class="px-2.5 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-xs font-semibold">
-        Save
-      </button>
-
       <button type="button"
-              hx-post="/workout/{{ workout_id }}/exercise/{{ ex.id }}/set/{{ s.id }}/delete"
-              hx-target="#sets-{{ ex.id }}"
-              hx-swap="innerHTML"
+              onclick="this.closest('tr').remove(); renumberSets('{{ ex.id }}')"
               class="px-2.5 py-1 bg-rose-100 text-rose-700 rounded-lg hover:bg-rose-200 text-xs font-semibold">
         Remove
       </button>
-    </form>
+    </div>
   </td>
 </tr>

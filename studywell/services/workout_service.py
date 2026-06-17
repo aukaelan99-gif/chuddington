@@ -12,16 +12,18 @@ from models import (
 )
 import uuid
 
-async def search_exercises(db: AsyncSession, q: str) -> list[dict]:
+async def search_exercises(db: AsyncSession, q: str, muscle_group: str = "all") -> list[dict]:
     q = q.strip().lower()
     stmt = select(ExerciseCatalog).order_by(ExerciseCatalog.name.asc())
+    if muscle_group and muscle_group != "all":
+        stmt = stmt.where(ExerciseCatalog.muscle_group == MuscleGroup(muscle_group))
     if not q:
         stmt = stmt.limit(12)
     else:
         stmt = stmt.where(func.lower(ExerciseCatalog.name).contains(q)).limit(20)
     r = await db.execute(stmt)
     rows = r.scalars().all()
-    return [
+    results = [
         {
             "name": row.name,
             "type": row.exercise_type.value,
@@ -29,6 +31,9 @@ async def search_exercises(db: AsyncSession, q: str) -> list[dict]:
         }
         for row in rows
     ]
+    if muscle_group == "all":
+        results.sort(key=lambda x: (x["muscle_group"], x["name"]))
+    return results
 
 
 async def create_workout(db: AsyncSession, name: str | None, today: date) -> Workout:
@@ -168,6 +173,40 @@ async def finish_workout(db: AsyncSession, workout_id: str) -> None:
     if w:
         w.finished = True
         await db.commit()
+
+
+async def finalize_workout_with_sets(db: AsyncSession, workout_id: str, sets_payload: list[dict]) -> None:
+    workout = await get_workout(db, workout_id)
+    if not workout:
+        return
+
+    # Clear old sets for a clean replace.
+    for ex in workout.exercises:
+        for s in ex.sets:
+            await db.delete(s)
+    await db.flush()
+
+    for ex_data in sets_payload:
+        ex_id = ex_data.get("exercise_id")
+        ex = next((row for row in workout.exercises if row.id == ex_id), None)
+        if not ex:
+            continue
+        for i, row in enumerate(ex_data.get("sets", []), start=1):
+            reps = row.get("reps")
+            weight_kg = row.get("weight_kg")
+            db.add(
+                WorkoutSet(
+                    id=str(uuid.uuid4()),
+                    exercise_id=ex.id,
+                    set_number=i,
+                    reps=int(reps) if reps not in (None, "") else None,
+                    weight_kg=float(weight_kg) if weight_kg not in (None, "") else None,
+                    duration_minutes=None,
+                )
+            )
+
+    workout.finished = True
+    await db.commit()
 
 
 async def get_recent_workouts(db: AsyncSession, limit: int = 5) -> list[Workout]:

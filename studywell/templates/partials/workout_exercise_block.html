@@ -2,7 +2,7 @@
 {% set is_bodyweight = ex.exercise_type.value == "bodyweight" %}
 {% set is_cardio     = ex.exercise_type.value == "cardio" %}
 
-<div id="ex-block-{{ ex.id }}" class="bg-white rounded-xl shadow p-5">
+<div id="ex-block-{{ ex.id }}" data-exercise-block="1" data-exercise-id="{{ ex.id }}" data-exercise-type="{{ ex.exercise_type.value }}" class="bg-white rounded-xl shadow p-5">
   <!-- Header -->
   <div class="flex items-center gap-3 mb-3">
     <span class="font-semibold text-base">{{ ex.name }}</span>
@@ -22,9 +22,9 @@
     <thead>
       <tr class="text-left text-gray-400 border-b text-xs uppercase">
         <th class="pb-1">Set</th>
-        {% if not is_cardio %}<th class="pb-1">Reps</th>{% endif %}
+        <th class="pb-1">Reps</th>
         {% if is_weighted %}<th class="pb-1">Weight</th>{% endif %}
-        <th class="pb-1">Duration</th>
+        <th class="pb-1">Actions</th>
       </tr>
     </thead>
     <tbody id="sets-{{ ex.id }}">
@@ -35,13 +35,11 @@
   </table>
 
   <!-- Plan set button -->
-  <form hx-post="/workout/{{ workout_id }}/exercise/{{ ex.id }}/plan-set"
-        hx-target="#sets-{{ ex.id }}"
-        hx-swap="beforeend"
-        class="border-t pt-3">
-    <button type="submit"
+  <div class="border-t pt-3">
+    <button type="button"
+            onclick="addPlannedSet('{{ ex.id }}', '{{ ex.exercise_type.value }}')"
             class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">
       + Add Planned Set
     </button>
-  </form>
+  </div>
 </div>
