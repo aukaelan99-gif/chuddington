@@ -1,7 +1,19 @@
 {% extends "base.html" %}
 {% block title %}Exercise — StudyWell{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">Exercise Tracker</h1>
+<h1 class="text-2xl font-bold mb-2">Exercise Tracker</h1>
+
+<!-- Start Workout CTA -->
+<div class="mb-6">
+  <form action="/workout/new" method="post" class="flex gap-3 items-center flex-wrap">
+    <input type="text" name="name" placeholder="Workout name (optional)"
+           class="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 w-56" />
+    <button type="submit"
+            class="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold text-sm">
+      🏋️ Start Workout
+    </button>
+  </form>
+</div>
 
 <!-- Stats strip -->
 <div class="grid grid-cols-2 gap-4 mb-6">

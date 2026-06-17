@@ -1,0 +1,21 @@
+{% set is_weighted   = ex.exercise_type.value == "weighted" %}
+{% set is_bodyweight = ex.exercise_type.value == "bodyweight" %}
+{% set is_cardio     = ex.exercise_type.value == "cardio" %}
+<tr class="border-b hover:bg-gray-50 text-sm">
+  <td class="py-1.5 text-gray-500">{{ s.set_number }}</td>
+  {% if not is_cardio %}
+  <td class="py-1.5 font-medium">{{ s.reps if s.reps else "—" }}</td>
+  {% endif %}
+  {% if is_weighted %}
+  <td class="py-1.5">
+    {% if s.weight_kg == 0 %}
+      <span class="text-xs text-green-600 font-medium">BW</span>
+    {% elif s.weight_kg %}
+      {{ s.weight_kg }} kg
+    {% else %}—{% endif %}
+  </td>
+  {% endif %}
+  <td class="py-1.5 text-gray-600">
+    {% if s.duration_minutes %}{{ s.duration_minutes }} min{% else %}—{% endif %}
+  </td>
+</tr>

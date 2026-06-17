@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from models import MealType, Intensity
+from models import MealType, Intensity, ExerciseType
 
 
 class StudySessionCreate(BaseModel):
@@ -37,3 +37,14 @@ class DailyGoalsUpdate(BaseModel):
     calorie_target: int = Field(ge=500, le=5000, default=2000)
     exercise_minutes: int = Field(ge=5, le=300, default=30)
     water_glasses: int = Field(ge=1, le=20, default=8)
+
+
+class AddExerciseForm(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    exercise_type: ExerciseType
+
+
+class AddSetForm(BaseModel):
+    reps: int | None = Field(default=None, ge=1, le=999)
+    weight_kg: float | None = Field(default=None, ge=0, le=1000)
+    duration_minutes: float | None = Field(default=None, ge=0, le=600)

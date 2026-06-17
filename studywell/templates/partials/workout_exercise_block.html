@@ -1,0 +1,81 @@
+{% set is_weighted   = ex.exercise_type.value == "weighted" %}
+{% set is_bodyweight = ex.exercise_type.value == "bodyweight" %}
+{% set is_cardio     = ex.exercise_type.value == "cardio" %}
+
+<div id="ex-block-{{ ex.id }}" class="bg-white rounded-xl shadow p-5">
+  <!-- Header -->
+  <div class="flex items-center gap-3 mb-3">
+    <span class="font-semibold text-base">{{ ex.name }}</span>
+    <span class="text-xs px-2 py-0.5 rounded-full font-medium
+      {% if is_weighted %}bg-blue-100 text-blue-700
+      {% elif is_bodyweight %}bg-green-100 text-green-700
+      {% else %}bg-orange-100 text-orange-700{% endif %}">
+      {{ ex.exercise_type.value | capitalize }}
+    </span>
+  </div>
+
+  <!-- Set table -->
+  <table class="w-full text-sm mb-3">
+    <thead>
+      <tr class="text-left text-gray-400 border-b text-xs uppercase">
+        <th class="pb-1">Set</th>
+        {% if not is_cardio %}<th class="pb-1">Reps</th>{% endif %}
+        {% if is_weighted %}<th class="pb-1">Weight</th>{% endif %}
+        <th class="pb-1">Duration</th>
+      </tr>
+    </thead>
+    <tbody id="sets-{{ ex.id }}">
+      {% for s in ex.sets %}
+        {% include "partials/workout_set_row.html" %}
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Add set form -->
+  <form hx-post="/workout/{{ workout_id }}/exercise/{{ ex.id }}/add-set"
+        hx-target="#sets-{{ ex.id }}"
+        hx-swap="beforeend"
+        hx-on::after-request="this.reset()"
+        class="flex flex-wrap gap-2 items-end border-t pt-3">
+
+    {% if not is_cardio %}
+    <div class="flex flex-col gap-0.5">
+      <label class="text-xs text-gray-500">Reps</label>
+      <input type="number" name="reps" min="1" max="999"
+             {% if not is_cardio %}required{% endif %}
+             class="w-20 border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+    </div>
+    {% endif %}
+
+    {% if is_weighted %}
+    <div class="flex flex-col gap-0.5" id="weight-field-{{ ex.id }}">
+      <label class="text-xs text-gray-500">Weight (kg)</label>
+      <input type="number" name="weight_kg" id="weight-input-{{ ex.id }}" step="0.5" min="0" max="1000"
+             class="w-24 border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+    </div>
+    <label class="flex items-center gap-1 text-xs text-gray-500 cursor-pointer self-end pb-2">
+      <input type="checkbox" onchange="
+        var inp = document.getElementById('weight-input-{{ ex.id }}');
+        inp.disabled = this.checked;
+        inp.value = this.checked ? '0' : '';
+        inp.closest('div').style.opacity = this.checked ? '0.4' : '1';
+      " />
+      Bodyweight
+    </label>
+    {% endif %}
+
+    <div class="flex flex-col gap-0.5">
+      <label class="text-xs text-gray-500">
+        Duration (min){% if not is_cardio %} <span class="text-gray-300">optional</span>{% endif %}
+      </label>
+      <input type="number" name="duration_minutes" step="0.5" min="0" max="600"
+             {% if is_cardio %}required{% endif %}
+             class="w-24 border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+    </div>
+
+    <button type="submit"
+            class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium self-end">
+      + Set
+    </button>
+  </form>
+</div>

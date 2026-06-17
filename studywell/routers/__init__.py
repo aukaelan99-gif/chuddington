@@ -1,3 +1,3 @@
-from routers import dashboard, study, exercise, diet, insights, settings
+from routers import dashboard, study, exercise, diet, insights, settings, workout
 
-__all__ = ["dashboard", "study", "exercise", "diet", "insights", "settings"]
+__all__ = ["dashboard", "study", "exercise", "diet", "insights", "settings", "workout"]

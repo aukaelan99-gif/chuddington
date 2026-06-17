@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Workout — StudyWell{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6 gap-4">
+  <h1 class="text-2xl font-bold">
+    {% if workout.name %}{{ workout.name }}{% else %}Workout Session{% endif %}
+  </h1>
+  <form action="/workout/{{ workout.id }}/finish" method="post">
+    <button type="submit"
+            class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium text-sm">
+      ✓ Finish Workout
+    </button>
+  </form>
+</div>
+
+<!-- Add exercise panel -->
+<div class="bg-white rounded-xl shadow p-5 mb-6">
+  <div class="font-semibold mb-3">Add Exercise</div>
+
+  <!-- Search bar -->
+  <div class="relative mb-3">
+    <input id="ex-search" type="text" placeholder="Search exercise…" autocomplete="off"
+           class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+           hx-get="/workout/search"
+           hx-trigger="keyup changed delay:200ms"
+           hx-target="#ex-suggestions"
+           hx-include="#ex-search"
+           name="q" />
+    <ul id="ex-suggestions"
+        class="absolute z-20 w-full bg-white border rounded-lg shadow-lg mt-1 hidden max-h-56 overflow-y-auto"></ul>
+  </div>
+
+  <!-- Add form (filled by clicking a suggestion or manually) -->
+  <form hx-post="/workout/{{ workout.id }}/add-exercise"
+        hx-target="#exercise-list"
+        hx-swap="beforeend"
+        hx-on::after-request="this.reset(); document.getElementById('ex-suggestions').classList.add('hidden')"
+        class="flex gap-2 flex-wrap">
+    <input id="ex-name-input" type="text" name="name" placeholder="Exercise name" required maxlength="100"
+           class="flex-1 min-w-40 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+    <select name="exercise_type" id="ex-type-select" required
+            class="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      <option value="weighted">Weighted</option>
+      <option value="bodyweight">Bodyweight</option>
+      <option value="cardio">Cardio</option>
+    </select>
+    <button type="submit"
+            class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">
+      + Add
+    </button>
+  </form>
+</div>
+
+<!-- Exercise blocks -->
+<div id="exercise-list" class="flex flex-col gap-4">
+  {% for ex in workout.exercises %}
+    {% include "partials/workout_exercise_block.html" %}
+  {% endfor %}
+</div>
+
+<script>
+// Search suggestion dropdown
+document.body.addEventListener('htmx:afterSwap', function(e) {
+  if (e.detail.target.id === 'ex-suggestions') {
+    const ul = e.detail.target;
+    try {
+      const results = JSON.parse(ul.innerHTML || '[]');
+      if (!Array.isArray(results) || results.length === 0) { ul.classList.add('hidden'); return; }
+      ul.innerHTML = results.map(r =>
+        `<li class="px-3 py-2 hover:bg-indigo-50 cursor-pointer text-sm flex justify-between"
+             onclick="fillExercise('${r.name.replace(/'/g,"\\'")}','${r.type}')">
+           <span>${r.name}</span>
+           <span class="text-xs text-gray-400">${r.type}</span>
+         </li>`
+      ).join('');
+      ul.classList.remove('hidden');
+    } catch(err) { ul.classList.add('hidden'); }
+  }
+});
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#ex-suggestions') && !e.target.closest('#ex-search')) {
+    document.getElementById('ex-suggestions').classList.add('hidden');
+  }
+});
+
+function fillExercise(name, type) {
+  document.getElementById('ex-name-input').value  = name;
+  document.getElementById('ex-search').value       = name;
+  document.getElementById('ex-type-select').value  = type;
+  document.getElementById('ex-suggestions').classList.add('hidden');
+}
+</script>
+{% endblock %}

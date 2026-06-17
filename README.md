@@ -3,6 +3,175 @@ Hackathon | SDG 3 | FastAPI + SQLite + Jinja2 + HTMX | Python-majority codebase
 
 ---
 
+## Agent Instructions — Workout Feature
+
+This section is written for an AI coding agent implementing the **Guided Workout Session** feature.
+
+### Overview
+A "Start Workout" button on `/exercise` launches a new guided workout session at `/workout/{id}`. Users search for exercises, add them to the session, then log sets. Three exercise types are supported:
+
+| Type | Fields per set |
+|---|---|
+| `weighted` | reps + weight (kg) + optional duration (min) |
+| `bodyweight` | reps + optional duration (min) |
+| `cardio` | duration (min) only |
+
+### New DB Models (add to `models.py`)
+```python
+class ExerciseType(str, enum.Enum):
+    weighted   = "weighted"
+    bodyweight = "bodyweight"
+    cardio     = "cardio"
+
+class Workout(Base):
+    __tablename__ = "workouts"
+    id:        Mapped[str]  = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    name:      Mapped[str | None] = mapped_column(String(100), nullable=True)
+    date:      Mapped[date] = mapped_column(Date)
+    finished:  Mapped[bool] = mapped_column(default=False)
+    exercises: Mapped[list["WorkoutExercise"]] = relationship(back_populates="workout", cascade="all, delete-orphan")
+
+class WorkoutExercise(Base):
+    __tablename__ = "workout_exercises"
+    id:            Mapped[str]          = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    workout_id:    Mapped[str]          = mapped_column(ForeignKey("workouts.id"))
+    name:          Mapped[str]          = mapped_column(String(100))
+    exercise_type: Mapped[ExerciseType] = mapped_column(SAEnum(ExerciseType))
+    order:         Mapped[int]          = mapped_column(Integer, default=0)
+    workout:       Mapped["Workout"]    = relationship(back_populates="exercises")
+    sets:          Mapped[list["WorkoutSet"]] = relationship(back_populates="exercise", cascade="all, delete-orphan")
+
+class WorkoutSet(Base):
+    __tablename__ = "workout_sets"
+    id:               Mapped[str]        = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    exercise_id:      Mapped[str]        = mapped_column(ForeignKey("workout_exercises.id"))
+    set_number:       Mapped[int]        = mapped_column(Integer)
+    reps:             Mapped[int | None] = mapped_column(Integer,  nullable=True)
+    weight_kg:        Mapped[float|None] = mapped_column(Float,    nullable=True)
+    duration_minutes: Mapped[float|None] = mapped_column(Float,    nullable=True)
+    exercise:         Mapped["WorkoutExercise"] = relationship(back_populates="sets")
+```
+
+### New Files
+```
+studywell/
+├── routers/workout.py          # GET/POST /workout
+├── services/workout_service.py
+├── templates/workout.html
+└── templates/partials/
+    ├── workout_exercise_block.html   # one exercise card with set table + add-set form
+    └── workout_set_row.html          # single <tr> for a logged set
+```
+
+### Routes (`routers/workout.py`)
+
+| Method | Path | Action |
+|---|---|---|
+| POST | `/workout/new` | Create Workout row, redirect to GET /workout/{id} |
+| GET  | `/workout/{id}` | Render workout session page |
+| POST | `/workout/{id}/add-exercise` | Add WorkoutExercise, return HTMX partial `workout_exercise_block.html` |
+| GET  | `/workout/search` | Return JSON list of exercise name suggestions matching `?q=` |
+| POST | `/workout/{id}/exercise/{ex_id}/add-set` | Append WorkoutSet, return HTMX partial `workout_set_row.html` |
+| POST | `/workout/{id}/finish` | Set `finished=True`, redirect to `/exercise` |
+
+### Exercise Search (`GET /workout/search?q=`)
+- Filter the `EXERCISE_LIBRARY` constant (list of dicts with `name` and `type`) by substring match on `q`.
+- Return JSON: `[{"name": "Bench Press", "type": "weighted"}, ...]`
+- HTMX on the frontend sends `hx-get="/workout/search"` on keyup with `hx-trigger="keyup changed delay:200ms"` and renders a dropdown of results.
+
+### Exercise Library constant (in `workout_service.py`)
+```python
+EXERCISE_LIBRARY = [
+    {"name": "Bench Press",       "type": "weighted"},
+    {"name": "Squat",             "type": "weighted"},
+    {"name": "Deadlift",          "type": "weighted"},
+    {"name": "Overhead Press",    "type": "weighted"},
+    {"name": "Barbell Row",       "type": "weighted"},
+    {"name": "Dumbbell Curl",     "type": "weighted"},
+    {"name": "Tricep Pushdown",   "type": "weighted"},
+    {"name": "Leg Press",         "type": "weighted"},
+    {"name": "Lateral Raise",     "type": "weighted"},
+    {"name": "Pull-Up",           "type": "bodyweight"},
+    {"name": "Push-Up",           "type": "bodyweight"},
+    {"name": "Dip",               "type": "bodyweight"},
+    {"name": "Chin-Up",           "type": "bodyweight"},
+    {"name": "Plank",             "type": "bodyweight"},
+    {"name": "Sit-Up",            "type": "bodyweight"},
+    {"name": "Burpee",            "type": "bodyweight"},
+    {"name": "Lunge",             "type": "bodyweight"},
+    {"name": "Running",           "type": "cardio"},
+    {"name": "Cycling",           "type": "cardio"},
+    {"name": "Rowing Machine",    "type": "cardio"},
+    {"name": "Jump Rope",         "type": "cardio"},
+    {"name": "Swimming",          "type": "cardio"},
+    {"name": "Elliptical",        "type": "cardio"},
+    {"name": "Stair Climber",     "type": "cardio"},
+]
+```
+
+### Schemas (add to `schemas.py`)
+```python
+class AddExerciseForm(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    exercise_type: ExerciseType
+
+class AddSetForm(BaseModel):
+    reps: int | None = Field(default=None, ge=1, le=999)
+    weight_kg: float | None = Field(default=None, ge=0, le=1000)
+    duration_minutes: float | None = Field(default=None, ge=0, le=600)
+```
+
+### `workout.html` page layout
+- Header: workout name (editable inline) + "Finish Workout" button (posts to `/workout/{id}/finish`)
+- Exercise search bar: text input with HTMX live search dropdown showing suggestions from `/workout/search?q=`
+  - Each suggestion is a clickable row that fills a hidden form and triggers `POST /workout/{id}/add-exercise`
+  - Form fields: `name` (text), `exercise_type` (hidden, auto-filled from suggestion)
+  - User can also type a custom name and manually pick the type via a select
+- For each WorkoutExercise already added: render `workout_exercise_block.html`
+- Each block shows: exercise name, type badge, table of sets logged so far, add-set form at bottom
+
+### `workout_exercise_block.html` layout
+- Exercise name + type badge (colour-coded: blue=weighted, green=bodyweight, orange=cardio)
+- Set table columns depend on type:
+  - weighted:   Set # | Reps | Weight (kg) | Duration (optional) | ✓
+  - bodyweight: Set # | Reps | Duration (optional) | ✓
+  - cardio:     Set # | Duration (min) | ✓
+- Add-set form below table, posts to `/workout/{id}/exercise/{ex_id}/add-set`
+  - HTMX: `hx-target="#sets-{ex_id}"` `hx-swap="beforeend"` returns `workout_set_row.html`
+- "Bodyweight" checkbox for weighted exercises (sets weight_kg = 0, hides weight field)
+
+### Add-set form fields by type
+- **weighted**: reps (number), weight_kg (number, disabled if bodyweight checkbox ticked), duration_minutes (optional number)
+- **bodyweight**: reps (number), duration_minutes (optional number)  
+- **cardio**: duration_minutes (number, required)
+
+### `workout_service.py` functions
+```python
+async def create_workout(db, name, today) -> Workout
+async def get_workout(db, workout_id) -> Workout  # with exercises + sets eagerly loaded
+async def add_exercise(db, workout_id, name, exercise_type, order) -> WorkoutExercise
+async def add_set(db, exercise_id, reps, weight_kg, duration_minutes, set_number) -> WorkoutSet
+async def finish_workout(db, workout_id) -> None
+async def get_recent_workouts(db, limit=5) -> list[Workout]
+```
+
+### Wire-up checklist
+- [ ] Add `ExerciseType`, `Workout`, `WorkoutExercise`, `WorkoutSet` to `models.py`
+- [ ] Add `ForeignKey` import to `models.py`
+- [ ] Add `relationship` import to `models.py`
+- [ ] Add `AddExerciseForm`, `AddSetForm` to `schemas.py`
+- [ ] Create `services/workout_service.py`
+- [ ] Create `routers/workout.py`
+- [ ] Register router in `main.py`: `app.include_router(workout.router, prefix="/workout")`
+- [ ] Add `workout` to `routers/__init__.py`
+- [ ] Add "Start Workout" button to `exercise.html` (posts to `/workout/new`)
+- [ ] Add `/workout` link to nav in `base.html`
+- [ ] Create `templates/workout.html`
+- [ ] Create `templates/partials/workout_exercise_block.html`
+- [ ] Create `templates/partials/workout_set_row.html`
+
+---
+
 ## Stack
 | Layer | Tool |
 |---|---|
