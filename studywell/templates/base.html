@@ -3,16 +3,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% block title %}StudyWell{% endblock %}</title>
+  <title>{% block title %}Chudlite™{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    (function () {
+      const allowed = new Set(['classic', 'retro', 'twilight', 'purple', 'violet', 'dark', 'winter', 'spring']);
+      const match = document.cookie.match(/(?:^|; )site_theme=([^;]+)/);
+      const raw = match ? decodeURIComponent(match[1]) : 'classic';
+      const theme = allowed.has(raw) ? raw : 'classic';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
 </head>
 <body class="bg-gray-50 text-gray-800 min-h-screen">
 
   <!-- Desktop sidebar -->
   <aside class="hidden md:flex fixed inset-y-0 left-0 w-56 bg-indigo-700 text-white flex-col py-6 px-4 z-10">
-    <div class="text-2xl font-bold mb-8">📚 StudyWell</div>
+    <div class="brand-lockup text-2xl font-bold mb-8">
+      <img src="/static/branding/app-icon.png" alt="Chudlite icon" class="brand-lockup__icon" />
+      <span class="brand-lockup__title">Chudlite™</span>
+    </div>
     <nav class="flex flex-col gap-2 flex-1">
       <a href="/"         class="nav-link flex items-center gap-2">
         <svg class="w-4 h-4 shrink-0" fill="none" stroke="white" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125A.375.375 0 004.875 20.25h4.5a.375.375 0 00.375-.375v-4.5a.375.375 0 01.375-.375h3a.375.375 0 01.375.375v4.5a.375.375 0 00.375.375h4.5a.375.375 0 00.375-.375V9.75"/></svg>
@@ -21,6 +33,14 @@
       <a href="/study"    class="nav-link flex items-center gap-2">
         <svg class="w-4 h-4 shrink-0" fill="none" stroke="white" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
         Study
+      </a>
+      <a href="/study/calendar" class="nav-link flex items-center gap-2">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="white" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 2.25v3M15.75 2.25v3M3.75 8.25h16.5M5.25 4.5h13.5A1.5 1.5 0 0120.25 6v13.5a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5V6a1.5 1.5 0 011.5-1.5z"/></svg>
+        Calendar
+      </a>
+      <a href="/study/ai" class="nav-link flex items-center gap-2">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="white" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18l-.813-2.096a2.25 2.25 0 00-1.341-1.341L4.75 13.75l2.096-.813a2.25 2.25 0 001.341-1.341L9 9.5l.813 2.096a2.25 2.25 0 001.341 1.341l2.096.813-2.096.813a2.25 2.25 0 00-1.341 1.341zM18.25 10.5L18 11.25l-.25-.75a1.5 1.5 0 00-.9-.9l-.75-.25.75-.25a1.5 1.5 0 00.9-.9L18 7.5l.25.75a1.5 1.5 0 00.9.9l.75.25-.75.25a1.5 1.5 0 00-.9.9zM16 20l-.375-1.125a1.875 1.875 0 00-1.125-1.125L13.375 17l1.125-.375a1.875 1.875 0 001.125-1.125L16 14.375l.375 1.125a1.875 1.875 0 001.125 1.125L18.625 17l-1.125.375a1.875 1.875 0 00-1.125 1.125L16 20z"/></svg>
+        Chulk AI Agent
       </a>
       <a href="/exercise" class="nav-link flex items-center gap-2">
         <svg class="w-4 h-4 shrink-0" fill="none" stroke="white" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
@@ -39,6 +59,9 @@
         Settings
       </a>
     </nav>
+
+    {% block sidebar_extras %}{% endblock %}
+
     <div class="mt-4 border-t border-indigo-600 pt-4 text-xs text-indigo-200 flex items-center justify-between gap-2">
       <span class="truncate flex items-center gap-1">
         <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
@@ -60,6 +83,10 @@
       <svg class="w-5 h-5" fill="none" stroke="white" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
       <span>Study</span>
     </a>
+    <a href="/study/calendar" class="flex flex-col items-center gap-0.5">
+      <svg class="w-5 h-5" fill="none" stroke="white" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 2.25v3M15.75 2.25v3M3.75 8.25h16.5M5.25 4.5h13.5A1.5 1.5 0 0120.25 6v13.5a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5V6a1.5 1.5 0 011.5-1.5z"/></svg>
+      <span>Calendar</span>
+    </a>
     <a href="/exercise" class="flex flex-col items-center gap-0.5">
       <svg class="w-5 h-5" fill="none" stroke="white" stroke-width="1.75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
       <span>Exercise</span>
@@ -75,11 +102,366 @@
   </nav>
 
   <!-- Main content -->
-  <main class="md:ml-56 pb-20 md:pb-6 px-4 py-6 max-w-4xl">
+  <main class="md:ml-56 pb-20 md:pb-6 px-4 md:px-6 lg:px-8 py-6 {% block main_width_class %}max-w-none{% endblock %}">
     {% block content %}{% endblock %}
   </main>
 
   <style>
+    :root {
+      --theme-page-bg: #f9fafb;
+      --theme-text-800: #1f2937;
+      --theme-text-700: #374151;
+      --theme-text-600: #4b5563;
+      --theme-text-500: #6b7280;
+      --theme-text-400: #9ca3af;
+      --theme-surface: #ffffff;
+      --theme-surface-alt: #f8fafc;
+      --theme-border-200: #e5e7eb;
+      --theme-border-100: #f3f4f6;
+      --theme-accent-700: #4338ca;
+      --theme-accent-600: #4f46e5;
+      --theme-accent-100: #e0e7ff;
+      --theme-accent-50: #eef2ff;
+      --theme-accent-text: #4338ca;
+      --theme-nav-bg: #4338ca;
+      --theme-nav-text: #ffffff;
+      --theme-nav-muted: #c7d2fe;
+      --theme-nav-border: #4f46e5;
+      --theme-nav-hover: rgba(255, 255, 255, 0.15);
+      --theme-button-text: #ffffff;
+      --theme-focus-ring: rgba(99, 102, 241, 0.45);
+      --theme-ripple: rgba(255, 255, 255, 0.35);
+      --theme-font-body: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --theme-font-heading: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --theme-font-size-base: 15.5px;
+      --theme-line-height: 1.46;
+      --theme-heading-spacing: 0.01em;
+    }
+
+    :root[data-theme='retro'] {
+      --theme-page-bg: #f6faf1;
+      --theme-text-800: #1f3d27;
+      --theme-text-700: #2e5337;
+      --theme-text-600: #3f6248;
+      --theme-text-500: #5f7c66;
+      --theme-text-400: #7f9a85;
+      --theme-surface: #ffffff;
+      --theme-surface-alt: #f0f8ea;
+      --theme-border-200: #cfe3c5;
+      --theme-border-100: #e3f0dc;
+      --theme-accent-700: #2f6d3a;
+      --theme-accent-600: #3f8b4d;
+      --theme-accent-100: #d6ecd6;
+      --theme-accent-50: #ebf8ec;
+      --theme-accent-text: #2f6d3a;
+      --theme-nav-bg: #2f6d3a;
+      --theme-nav-text: #f7fff7;
+      --theme-nav-muted: #cbe8cf;
+      --theme-nav-border: #3f8b4d;
+      --theme-nav-hover: rgba(234, 255, 236, 0.2);
+      --theme-focus-ring: rgba(63, 139, 77, 0.45);
+      --theme-font-body: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --theme-font-heading: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --theme-font-size-base: 16px;
+      --theme-line-height: 1.52;
+      --theme-heading-spacing: 0.015em;
+    }
+
+    :root[data-theme='twilight'] {
+      --theme-page-bg: #1a1d2e;
+      --theme-text-800: #ebeaf8;
+      --theme-text-700: #d6d3f0;
+      --theme-text-600: #b8b3dd;
+      --theme-text-500: #9b95c4;
+      --theme-text-400: #7e78a8;
+      --theme-surface: #22263a;
+      --theme-surface-alt: #2a3048;
+      --theme-border-200: #3a4161;
+      --theme-border-100: #323955;
+      --theme-accent-700: #7a6cff;
+      --theme-accent-600: #8b7fff;
+      --theme-accent-100: #322d59;
+      --theme-accent-50: #2b274b;
+      --theme-accent-text: #c0b8ff;
+      --theme-nav-bg: #171a2a;
+      --theme-nav-text: #ece9ff;
+      --theme-nav-muted: #a8a1d9;
+      --theme-nav-border: #343b5d;
+      --theme-nav-hover: rgba(139, 127, 255, 0.2);
+      --theme-button-text: #f5f4ff;
+      --theme-focus-ring: rgba(139, 127, 255, 0.5);
+      --theme-ripple: rgba(192, 184, 255, 0.32);
+      --theme-font-body: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --theme-font-heading: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --theme-font-size-base: 15.5px;
+      --theme-line-height: 1.5;
+      --theme-heading-spacing: 0.008em;
+    }
+
+    :root[data-theme='purple'] {
+      --theme-page-bg: #f8f4ff;
+      --theme-text-800: #3b245a;
+      --theme-text-700: #52367a;
+      --theme-text-600: #644694;
+      --theme-text-500: #7f61b0;
+      --theme-text-400: #9b82c8;
+      --theme-surface: #ffffff;
+      --theme-surface-alt: #f4ecff;
+      --theme-border-200: #decdf9;
+      --theme-border-100: #ebe0ff;
+      --theme-accent-700: #6d28d9;
+      --theme-accent-600: #7c3aed;
+      --theme-accent-100: #ede9fe;
+      --theme-accent-50: #f5f3ff;
+      --theme-accent-text: #6d28d9;
+      --theme-nav-bg: #6d28d9;
+      --theme-nav-text: #f8f5ff;
+      --theme-nav-muted: #ddd6fe;
+      --theme-nav-border: #7c3aed;
+      --theme-nav-hover: rgba(255, 255, 255, 0.16);
+      --theme-focus-ring: rgba(124, 58, 237, 0.45);
+      --theme-font-body: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --theme-font-heading: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --theme-font-size-base: 15.5px;
+      --theme-line-height: 1.47;
+      --theme-heading-spacing: 0.01em;
+    }
+
+    :root[data-theme='violet'] {
+      --theme-page-bg: #f4f7ff;
+      --theme-text-800: #2f315f;
+      --theme-text-700: #42457a;
+      --theme-text-600: #5b5f99;
+      --theme-text-500: #7579b5;
+      --theme-text-400: #979acb;
+      --theme-surface: #ffffff;
+      --theme-surface-alt: #edf0ff;
+      --theme-border-200: #d4dafb;
+      --theme-border-100: #e4e8ff;
+      --theme-accent-700: #5b63d8;
+      --theme-accent-600: #6570e6;
+      --theme-accent-100: #e2e7ff;
+      --theme-accent-50: #eef1ff;
+      --theme-accent-text: #4e56c3;
+      --theme-nav-bg: #4e56c3;
+      --theme-nav-text: #f4f6ff;
+      --theme-nav-muted: #d8dcff;
+      --theme-nav-border: #6570e6;
+      --theme-nav-hover: rgba(255, 255, 255, 0.2);
+      --theme-focus-ring: rgba(101, 112, 230, 0.45);
+      --theme-font-body: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --theme-font-heading: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --theme-font-size-base: 15.5px;
+      --theme-line-height: 1.47;
+      --theme-heading-spacing: 0.01em;
+    }
+
+    :root[data-theme='dark'] {
+      --theme-page-bg: #111827;
+      --theme-text-800: #e5e7eb;
+      --theme-text-700: #d1d5db;
+      --theme-text-600: #9ca3af;
+      --theme-text-500: #6b7280;
+      --theme-text-400: #4b5563;
+      --theme-surface: #1f2937;
+      --theme-surface-alt: #273244;
+      --theme-border-200: #374151;
+      --theme-border-100: #2c3646;
+      --theme-accent-700: #0f766e;
+      --theme-accent-600: #0d9488;
+      --theme-accent-100: #1f4b49;
+      --theme-accent-50: #203f3e;
+      --theme-accent-text: #5eead4;
+      --theme-nav-bg: #0b1220;
+      --theme-nav-text: #ecfeff;
+      --theme-nav-muted: #99f6e4;
+      --theme-nav-border: #134e4a;
+      --theme-nav-hover: rgba(94, 234, 212, 0.2);
+      --theme-button-text: #e6fffb;
+      --theme-focus-ring: rgba(13, 148, 136, 0.5);
+      --theme-ripple: rgba(94, 234, 212, 0.25);
+      --theme-font-body: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --theme-font-heading: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --theme-font-size-base: 16px;
+      --theme-line-height: 1.54;
+      --theme-heading-spacing: 0.012em;
+    }
+
+    :root[data-theme='winter'] {
+      --theme-page-bg: #f1f8ff;
+      --theme-text-800: #14324d;
+      --theme-text-700: #1f4565;
+      --theme-text-600: #345b7f;
+      --theme-text-500: #4f7396;
+      --theme-text-400: #7090ae;
+      --theme-surface: #ffffff;
+      --theme-surface-alt: #eef6ff;
+      --theme-border-200: #cce1f5;
+      --theme-border-100: #deecfa;
+      --theme-accent-700: #1e5da8;
+      --theme-accent-600: #2b73cc;
+      --theme-accent-100: #d8e9ff;
+      --theme-accent-50: #eaf3ff;
+      --theme-accent-text: #1e5da8;
+      --theme-nav-bg: #1e5da8;
+      --theme-nav-text: #f4f9ff;
+      --theme-nav-muted: #cfe4ff;
+      --theme-nav-border: #2b73cc;
+      --theme-nav-hover: rgba(226, 240, 255, 0.2);
+      --theme-focus-ring: rgba(43, 115, 204, 0.45);
+      --theme-font-body: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --theme-font-heading: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --theme-font-size-base: 15.5px;
+      --theme-line-height: 1.48;
+      --theme-heading-spacing: 0.012em;
+    }
+
+    :root[data-theme='spring'] {
+      --theme-page-bg: #f7fff7;
+      --theme-text-800: #1f4a28;
+      --theme-text-700: #2d6338;
+      --theme-text-600: #40784b;
+      --theme-text-500: #5d9670;
+      --theme-text-400: #7ab08a;
+      --theme-surface: #ffffff;
+      --theme-surface-alt: #effbf0;
+      --theme-border-200: #cdeacd;
+      --theme-border-100: #dcf3dc;
+      --theme-accent-700: #2f855a;
+      --theme-accent-600: #38a169;
+      --theme-accent-100: #d9f5df;
+      --theme-accent-50: #eafaf0;
+      --theme-accent-text: #2f855a;
+      --theme-nav-bg: #2f855a;
+      --theme-nav-text: #f6fff8;
+      --theme-nav-muted: #ccefd8;
+      --theme-nav-border: #38a169;
+      --theme-nav-hover: rgba(245, 255, 247, 0.2);
+      --theme-focus-ring: rgba(56, 161, 105, 0.45);
+      --theme-font-body: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --theme-font-heading: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --theme-font-size-base: 15.75px;
+      --theme-line-height: 1.5;
+      --theme-heading-spacing: 0.015em;
+    }
+
+    body {
+      background: var(--theme-page-bg) !important;
+      color: var(--theme-text-800) !important;
+      font-family: var(--theme-font-body);
+      font-size: var(--theme-font-size-base);
+      line-height: var(--theme-line-height);
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-family: var(--theme-font-heading);
+      letter-spacing: var(--theme-heading-spacing);
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font-family: inherit;
+    }
+
+    body .bg-gray-50 { background-color: var(--theme-page-bg) !important; }
+    body .bg-white { background-color: var(--theme-surface) !important; }
+    body .from-gray-50 { --tw-gradient-from: var(--theme-surface-alt) var(--tw-gradient-from-position) !important; }
+    body .to-white { --tw-gradient-to: var(--theme-surface) var(--tw-gradient-to-position) !important; }
+
+    body .text-gray-800 { color: var(--theme-text-800) !important; }
+    body .text-gray-700 { color: var(--theme-text-700) !important; }
+    body .text-gray-600 { color: var(--theme-text-600) !important; }
+    body .text-gray-500 { color: var(--theme-text-500) !important; }
+    body .text-gray-400 { color: var(--theme-text-400) !important; }
+
+    body .border-gray-200 { border-color: var(--theme-border-200) !important; }
+    body .border-gray-100 { border-color: var(--theme-border-100) !important; }
+
+    body .bg-indigo-700 { background-color: var(--theme-nav-bg) !important; }
+    body .bg-indigo-600 { background-color: var(--theme-accent-600) !important; }
+    body .hover\:bg-indigo-700:hover { background-color: var(--theme-accent-700) !important; }
+    body .bg-indigo-100 { background-color: var(--theme-accent-100) !important; }
+    body .bg-indigo-50 { background-color: var(--theme-accent-50) !important; }
+    body .text-indigo-700 { color: var(--theme-accent-text) !important; }
+    body .text-indigo-600 { color: var(--theme-accent-text) !important; }
+    body .border-indigo-100 { border-color: var(--theme-accent-100) !important; }
+    body .border-indigo-200 { border-color: var(--theme-accent-100) !important; }
+    body .focus\:ring-indigo-400:focus { --tw-ring-color: var(--theme-focus-ring) !important; }
+
+    aside {
+      background-color: var(--theme-nav-bg) !important;
+      color: var(--theme-nav-text) !important;
+    }
+
+    .md\:hidden.fixed.bottom-0.inset-x-0.bg-indigo-700 {
+      background-color: var(--theme-nav-bg) !important;
+      color: var(--theme-nav-text) !important;
+    }
+
+    aside .text-indigo-200,
+    aside .hover\:text-white,
+    aside .border-indigo-600 {
+      color: var(--theme-nav-muted) !important;
+      border-color: var(--theme-nav-border) !important;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    main {
+      animation: page-enter 220ms ease-out;
+    }
+
+    @keyframes page-enter {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    button {
+      position: relative;
+      overflow: hidden;
+      transition: transform 120ms ease, box-shadow 180ms ease, filter 180ms ease;
+      will-change: transform;
+    }
+
+    button:hover {
+      filter: brightness(1.03);
+    }
+
+    button:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    button:focus-visible {
+      outline: 2px solid var(--theme-focus-ring);
+      outline-offset: 2px;
+    }
+
+    .tap-ripple {
+      position: absolute;
+      border-radius: 9999px;
+      background: var(--theme-ripple);
+      pointer-events: none;
+      transform: translate(-50%, -50%) scale(0.2);
+      animation: ripple-burst 480ms ease-out forwards;
+    }
+
+    @keyframes ripple-burst {
+      to {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
     .nav-link {
       display: flex;
       align-items: center;
@@ -88,8 +470,53 @@
       border-radius: 0.375rem;
       transition: background 0.15s;
     }
-    .nav-link:hover { background: rgba(255,255,255,0.15); }
+
+    .brand-lockup {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      width: max-content;
+      margin: 0 auto 2rem auto;
+      text-align: center;
+      line-height: 1;
+      transform: translateX(-8px);
+    }
+
+    .brand-lockup__icon {
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+      flex-shrink: 0;
+      display: block;
+    }
+
+    .brand-lockup__title {
+      display: block;
+      white-space: nowrap;
+    }
+
+    .nav-link:hover { background: var(--theme-nav-hover); }
     .progress-bar { transition: width 0.4s ease; }
   </style>
+
+  <script>
+    document.addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button) return;
+
+      const rect = button.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      const ripple = document.createElement('span');
+      ripple.className = 'tap-ripple';
+      ripple.style.width = size + 'px';
+      ripple.style.height = size + 'px';
+      ripple.style.left = (event.clientX - rect.left) + 'px';
+      ripple.style.top = (event.clientY - rect.top) + 'px';
+
+      button.appendChild(ripple);
+      ripple.addEventListener('animationend', () => ripple.remove(), { once: true });
+    });
+  </script>
 </body>
 </html>

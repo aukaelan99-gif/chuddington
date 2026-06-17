@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Dashboard — StudyWell{% endblock %}
+{% block title %}Dashboard — Chudlite™{% endblock %}
 {% block content %}
 <div class="mb-6 flex items-center justify-between">
   <h1 class="text-2xl font-bold">Dashboard</h1>
@@ -57,7 +57,12 @@
   <!-- Water -->
   <div class="bg-white rounded-xl shadow p-4">
     <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Water Today</div>
-    <div class="text-2xl font-bold text-blue-500">{{ water }} 🥤</div>
+    <div class="text-2xl font-bold text-blue-500 flex items-center gap-2">
+      <span>{{ water }}</span>
+      <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3.5c0 0-5 5.5-5 9a5 5 0 0010 0c0-3.5-5-9-5-9z" />
+      </svg>
+    </div>
     <div class="text-sm text-gray-400">Goal: {{ water_goal }} glasses</div>
     <div class="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
       <div class="h-2 bg-blue-400 rounded-full progress-bar" style="width: {{ water_pct }}%"></div>

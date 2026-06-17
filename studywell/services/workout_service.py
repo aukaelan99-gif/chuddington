@@ -332,7 +332,39 @@ async def get_muscle_distribution_last_7(db: AsyncSession, user_id: str) -> dict
         .where(Workout.date >= since, Workout.finished == True, Workout.user_id == user_id)
         .group_by(WorkoutExercise.muscle_group)
     )
-    return {row[0].value if row[0] else "other": int(row[1]) for row in r.all()}
+    # Keep chart order stable and always present, even with no logged sets.
+    distribution = {
+        "arms": 0,
+        "back": 0,
+        "chest": 0,
+        "legs": 0,
+        "core": 0,
+        "cardio": 0,
+    }
+
+    muscle_to_bucket = {
+        MuscleGroup.biceps.value: "arms",
+        MuscleGroup.triceps.value: "arms",
+        MuscleGroup.forearms.value: "arms",
+        MuscleGroup.shoulders.value: "arms",
+        MuscleGroup.back.value: "back",
+        MuscleGroup.chest.value: "chest",
+        MuscleGroup.quads.value: "legs",
+        MuscleGroup.hamstrings.value: "legs",
+        MuscleGroup.glutes.value: "legs",
+        MuscleGroup.calves.value: "legs",
+        MuscleGroup.core.value: "core",
+        MuscleGroup.full_body.value: "core",
+        MuscleGroup.other.value: "core",
+        MuscleGroup.cardio.value: "cardio",
+    }
+
+    for row in r.all():
+        key = row[0].value if row[0] else MuscleGroup.other.value
+        bucket = muscle_to_bucket.get(key, "core")
+        distribution[bucket] += int(row[1])
+
+    return distribution
 
 
 async def delete_workout(db: AsyncSession, workout_id: str) -> None:

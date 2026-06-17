@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Exercise — StudyWell{% endblock %}
+{% block title %}Exercise — Chudlite™{% endblock %}
 {% block content %}
 <div class="flex items-center justify-between mb-5">
   <h1 class="text-2xl font-bold">Exercise Tracker</h1>
@@ -40,29 +40,173 @@
 </div>
 
 <!-- Muscle distribution chart -->
-<div class="bg-white rounded-xl shadow p-6">
-  <div class="font-semibold mb-4">Muscle Group Leverage — Last 7 Days</div>
-  <canvas id="muscleChart" height="120"></canvas>
+<div class="bg-white rounded-2xl shadow p-6">
+  <div class="font-semibold mb-4 text-gray-700">Muscle Group Leverage — Last 7 Days</div>
+  <div class="w-full">
+    <canvas id="muscleChart" height="120"></canvas>
+  </div>
+  <p class="text-xs text-gray-400 mt-3">Drag points on the blue shape to adjust it.</p>
 </div>
 
 <script>
-new Chart(document.getElementById('muscleChart'), {
-  type: 'radar',
-  data: {
-    labels: {{ dist_labels | tojson }},
-    datasets: [{
-      label: 'Sets Logged',
-      data: {{ dist_values | tojson }},
-      borderColor: 'rgba(79,70,229,1)',
-      backgroundColor: 'rgba(79,70,229,0.20)',
-      pointBackgroundColor: 'rgba(79,70,229,1)',
-      pointRadius: 3,
-    }]
-  },
-  options: {
-    responsive: true,
-    scales: { r: { beginAtZero: true, ticks: { precision: 0 } } }
+(function () {
+  const muscleCanvas = document.getElementById('muscleChart');
+  // initialValues order: [arms, back, chest, legs, core, cardio]
+  const initialValues = {{ dist_values | tojson }};
+
+  // Build a triangle using alternating axes (0=Arms, 2=Chest, 4=Core).
+  // Each vertex absorbs the max of its two neighbouring axes so all 6
+  // muscle groups influence the shape.
+  //   vertex 0 (Arms axis)  ← max(arms, back)
+  //   vertex 2 (Chest axis) ← max(chest, legs)
+  //   vertex 4 (Core axis)  ← max(core, cardio)
+  const triData = [
+    Math.max(initialValues[0], initialValues[1]), // arms / back
+    0,
+    Math.max(initialValues[2], initialValues[3]), // chest / legs
+    0,
+    Math.max(initialValues[4], initialValues[5]), // core / cardio
+    0,
+  ];
+  const axisMax = Math.max(5, ...triData, 1);
+
+  const muscleChart = new Chart(muscleCanvas, {
+    type: 'radar',
+    data: {
+      labels: {{ dist_labels | tojson }},
+      datasets: [
+        {
+          label: 'Sets Logged',
+          data: triData,
+          borderColor: 'rgba(63,71,230,1)',
+          backgroundColor: 'rgba(63,71,230,0.12)',
+          borderWidth: 2,
+          pointBackgroundColor: ['rgba(63,71,230,1)', 'transparent', 'rgba(63,71,230,1)', 'transparent', 'rgba(63,71,230,1)', 'transparent'],
+          pointBorderColor: ['rgba(255,255,255,1)', 'transparent', 'rgba(255,255,255,1)', 'transparent', 'rgba(255,255,255,1)', 'transparent'],
+          pointBorderWidth: 2,
+          pointRadius: [5, 0, 5, 0, 5, 0],
+          pointHoverRadius: [8, 0, 8, 0, 8, 0],
+          pointHoverBackgroundColor: ['rgba(63,71,230,0.9)', 'transparent', 'rgba(63,71,230,0.9)', 'transparent', 'rgba(63,71,230,0.9)', 'transparent'],
+          pointHoverBorderColor: ['rgba(255,255,255,1)', 'transparent', 'rgba(255,255,255,1)', 'transparent', 'rgba(255,255,255,1)', 'transparent'],
+          pointHoverBorderWidth: 2,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      animation: {
+        duration: 650,
+        easing: 'easeOutQuart',
+      },
+      plugins: {
+        legend: { display: false },
+      },
+      scales: {
+        r: {
+          beginAtZero: true,
+          min: 0,
+          max: axisMax,
+          ticks: {
+            display: false,
+          },
+          angleLines: {
+            color: 'rgba(200,200,220,0.6)',
+            lineWidth: 1,
+          },
+          grid: {
+            color: 'rgba(200,200,220,0.55)',
+            circular: false,
+          },
+          pointLabels: {
+            color: 'rgba(80,80,100,0.9)',
+            font: {
+              size: 13,
+              weight: '500',
+            },
+          },
+        }
+      }
+    }
+  });
+
+  let draggingPointIndex = null;
+
+  function getPointerPosition(evt) {
+    const rect = muscleCanvas.getBoundingClientRect();
+    const source = evt.touches && evt.touches[0] ? evt.touches[0] : evt;
+    return {
+      x: source.clientX - rect.left,
+      y: source.clientY - rect.top,
+    };
   }
-});
+
+  function nearestPointIndex(evt) {
+    const points = muscleChart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false);
+    if (!points.length) return null;
+    const p = points[0];
+    if (p.datasetIndex !== 0) return null;
+    if (p.index % 2 !== 0) return null; // only triangle vertices (0, 2, 4)
+    return p.index;
+  }
+
+  function updateDraggedPoint(index, evt) {
+    const scale = muscleChart.scales.r;
+    if (!scale) return;
+
+    const pointer = getPointerPosition(evt);
+    const dx = pointer.x - scale.xCenter;
+    const dy = pointer.y - scale.yCenter;
+    const angle = scale.getIndexAngle(index);
+    const axisX = Math.cos(angle);
+    const axisY = Math.sin(angle);
+
+    const projected = (dx * axisX) + (dy * axisY);
+    const clampedDistance = Math.max(0, Math.min(scale.drawingArea, projected));
+    const nextValue = scale.min + ((clampedDistance / scale.drawingArea) * (scale.max - scale.min));
+
+    muscleChart.data.datasets[0].data[index] = Number(nextValue.toFixed(1));
+    muscleChart.update('none');
+  }
+
+  muscleCanvas.addEventListener('mousedown', (evt) => {
+    const idx = nearestPointIndex(evt);
+    if (idx === null) return;
+    draggingPointIndex = idx;
+    muscleCanvas.style.cursor = 'grabbing';
+    evt.preventDefault();
+  });
+
+  window.addEventListener('mousemove', (evt) => {
+    if (draggingPointIndex === null) {
+      const idx = nearestPointIndex(evt);
+      muscleCanvas.style.cursor = idx === null ? 'default' : 'grab';
+      return;
+    }
+    updateDraggedPoint(draggingPointIndex, evt);
+  });
+
+  window.addEventListener('mouseup', () => {
+    draggingPointIndex = null;
+    muscleCanvas.style.cursor = 'default';
+  });
+
+  muscleCanvas.addEventListener('touchstart', (evt) => {
+    const idx = nearestPointIndex(evt);
+    if (idx === null) return;
+    draggingPointIndex = idx;
+    evt.preventDefault();
+  }, { passive: false });
+
+  window.addEventListener('touchmove', (evt) => {
+    if (draggingPointIndex === null) return;
+    updateDraggedPoint(draggingPointIndex, evt);
+    evt.preventDefault();
+  }, { passive: false });
+
+  window.addEventListener('touchend', () => {
+    draggingPointIndex = null;
+  });
+})();
 </script>
 {% endblock %}

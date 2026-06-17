@@ -18,8 +18,8 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="StudyWell", lifespan=lifespan)
-app.add_middleware(SessionMiddleware, secret_key="studywell-secret-change-in-prod-2026", https_only=False)
+app = FastAPI(title="Chudlite™", lifespan=lifespan)
+app.add_middleware(SessionMiddleware, secret_key="chudlite-secret-change-in-prod-2026", https_only=False)
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 

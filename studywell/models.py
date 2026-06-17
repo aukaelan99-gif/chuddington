@@ -13,6 +13,7 @@ class User(Base):
     id:            Mapped[str]      = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     username:      Mapped[str]      = mapped_column(String(50), unique=True, nullable=False)
     password_hash: Mapped[str]      = mapped_column(String(200), nullable=False)
+    chulk_avatar_file: Mapped[str]  = mapped_column(String(120), default="chulk-default.svg")
     created_at:    Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -70,12 +71,61 @@ class WaterLog(Base):
     date: Mapped[date] = mapped_column(Date)
 
 
+class FoodItem(Base):
+    __tablename__ = "food_items"
+    id:           Mapped[str]        = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id:      Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    name:         Mapped[str]        = mapped_column(String(150))
+    category:     Mapped[str]        = mapped_column(String(50), default="other")
+    base_grams:   Mapped[float]      = mapped_column(Float, default=100.0)
+    serving_desc: Mapped[str]        = mapped_column(String(50), default="1 serving")
+    calories:     Mapped[int]        = mapped_column(Integer)
+    protein_g:    Mapped[float]      = mapped_column(Float, default=0.0)
+    carbs_g:      Mapped[float]      = mapped_column(Float, default=0.0)
+    fat_g:        Mapped[float]      = mapped_column(Float, default=0.0)
+
+
+class SavedMeal(Base):
+    __tablename__ = "saved_meals"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    meal_type: Mapped[MealType] = mapped_column(SAEnum(MealType))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    items: Mapped[list["SavedMealItem"]] = relationship(
+        back_populates="saved_meal", cascade="all, delete-orphan", order_by="SavedMealItem.order"
+    )
+
+
+class SavedMealItem(Base):
+    __tablename__ = "saved_meal_items"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    saved_meal_id: Mapped[str] = mapped_column(ForeignKey("saved_meals.id"), index=True)
+    food_item_id: Mapped[str | None] = mapped_column(ForeignKey("food_items.id"), nullable=True)
+    grams: Mapped[float] = mapped_column(Float, default=100.0)
+    order: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Snapshot fallback if linked food is missing later.
+    name_snapshot: Mapped[str] = mapped_column(String(150), default="Food")
+    category_snapshot: Mapped[str] = mapped_column(String(50), default="other")
+    base_grams_snapshot: Mapped[float] = mapped_column(Float, default=100.0)
+    calories_snapshot: Mapped[int] = mapped_column(Integer, default=0)
+    protein_snapshot: Mapped[float] = mapped_column(Float, default=0.0)
+    carbs_snapshot: Mapped[float] = mapped_column(Float, default=0.0)
+    fat_snapshot: Mapped[float] = mapped_column(Float, default=0.0)
+
+    saved_meal: Mapped["SavedMeal"] = relationship(back_populates="items")
+
+
 class DailyGoals(Base):
     __tablename__ = "daily_goals"
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, unique=True, index=True)
     study_minutes: Mapped[int] = mapped_column(Integer, default=120)
     calorie_target: Mapped[int] = mapped_column(Integer, default=2000)
+    protein_target: Mapped[int] = mapped_column(Integer, default=150)
+    carbs_target: Mapped[int] = mapped_column(Integer, default=250)
+    fat_target: Mapped[int] = mapped_column(Integer, default=70)
     exercise_minutes: Mapped[int] = mapped_column(Integer, default=30)
     water_glasses: Mapped[int] = mapped_column(Integer, default=8)
 
@@ -147,3 +197,19 @@ class WorkoutSet(Base):
     weight_kg:        Mapped[float | None] = mapped_column(Float,  nullable=True)
     duration_minutes: Mapped[float | None] = mapped_column(Float,  nullable=True)
     exercise:         Mapped["WorkoutExercise"] = relationship(back_populates="sets")
+
+
+class EventType(str, enum.Enum):
+    important = "important"
+    study     = "study"
+    other     = "other"
+
+
+class CalendarEvent(Base):
+    __tablename__ = "calendar_events"
+    id:          Mapped[str]           = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id:     Mapped[str | None]    = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    title:       Mapped[str]           = mapped_column(String(100))
+    event_date:  Mapped[date]          = mapped_column(Date, index=True)
+    event_type:  Mapped[EventType]     = mapped_column(SAEnum(EventType), default=EventType.study)
+    description: Mapped[str | None]    = mapped_column(String(300), nullable=True)

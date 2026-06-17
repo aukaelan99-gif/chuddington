@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Chulk neon avatar">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="64" fill="url(#bg)"/>
+  <circle cx="64" cy="52" r="24" fill="#fdf4ff"/>
+  <path d="M22 108c9-19 23-28 42-28s33 9 42 28" fill="#fdf4ff"/>
+  <circle cx="54" cy="50" r="4" fill="#4c1d95"/>
+  <circle cx="74" cy="50" r="4" fill="#4c1d95"/>
+  <path d="M54 62c3 3 6 4 10 4s7-1 10-4" stroke="#4c1d95" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M42 38l9-8M86 38l-9-8" stroke="#e879f9" stroke-width="3" stroke-linecap="round"/>
+</svg>

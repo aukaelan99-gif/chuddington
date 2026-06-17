@@ -1,0 +1,865 @@
+{% extends "base.html" %}
+{% block title %}Chulk — Chudlite™{% endblock %}
+{% block main_width_class %}max-w-none{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold">Chulk AI Agent</h1>
+  <a href="/study" class="text-sm text-indigo-600 hover:underline">Back to Study Tracker</a>
+</div>
+
+<div class="grid lg:grid-cols-[280px_1fr] gap-4 items-start mb-6">
+  <aside class="bg-white rounded-xl shadow p-4 border border-indigo-100 lg:sticky lg:top-20">
+    <div class="font-semibold text-gray-800 mb-2">Chulk Pages</div>
+    <button id="teach-new-instance" type="button"
+            class="w-full px-3 py-2 bg-white border border-indigo-200 text-indigo-700 rounded-lg hover:bg-indigo-50 text-xs font-semibold whitespace-nowrap">
+      + New Chulk Page
+    </button>
+    <div id="teach-instance-tabs" class="flex flex-col gap-2 mt-3 max-h-[60vh] overflow-y-auto pr-1"></div>
+  </aside>
+
+  <div class="bg-white rounded-xl shadow p-6 border border-indigo-100 min-w-0">
+    <div class="flex items-start justify-between gap-3 mb-4">
+      <div>
+        <div class="font-semibold text-gray-800">Chulk</div>
+        <p class="text-xs text-gray-500 mt-1">Choose curriculum and subject, then run focused study sessions in student or teacher mode.</p>
+      </div>
+      <span class="px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">Focused Page</span>
+    </div>
+
+  <div class="flex flex-wrap items-center gap-2 mb-1 min-w-0">
+    <select id="teach-curriculum"
+            class="w-full sm:w-44 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      <option value="">Curriculum</option>
+      <option value="IB">IB</option>
+      <option value="A Level">A Level</option>
+      <option value="IGCSE">IGCSE</option>
+    </select>
+    <select id="teach-subject"
+            class="flex-1 min-w-[220px] border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" disabled>
+      <option value="">Select subject</option>
+    </select>
+        <select id="teach-ib-level"
+        class="hidden w-full sm:w-28 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      <option value="">IB Level</option>
+      <option value="HL">HL</option>
+      <option value="SL">SL</option>
+        </select>
+    <select id="teach-mode"
+            class="w-full sm:w-44 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      <option value="listen">Bot as Student</option>
+      <option value="teacher">Bot as Teacher</option>
+    </select>
+    <button id="teach-begin" type="button"
+            class="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium whitespace-nowrap">Start</button>
+    <button id="teach-clear" type="button"
+            class="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 text-sm font-medium">Clear</button>
+  </div>
+  <p id="teach-source-note" class="text-[11px] text-gray-400 mb-2">Subjects are loaded from official curriculum lists.</p>
+
+  <div id="teach-chat-log" class="h-[26rem] overflow-y-auto rounded-xl border border-gray-200 bg-gradient-to-b from-gray-50 to-white p-3 space-y-3 mb-3"></div>
+
+  <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+    <p class="text-xs text-gray-500">Tip: Press Enter to send. Shift+Enter for newline.</p>
+    <button id="teach-make-session" type="button"
+            class="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100 text-xs font-semibold whitespace-nowrap">
+      Make Study Session
+    </button>
+  </div>
+
+  <form id="teach-form" class="flex flex-col sm:flex-row gap-2 items-end">
+    <textarea id="teach-input" rows="2" maxlength="1800" required disabled
+              placeholder="Start first, then prompt a specific part you want to learn."
+              class="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"></textarea>
+    <button id="teach-send" type="submit" disabled
+            class="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium whitespace-nowrap">
+      Send
+    </button>
+  </form>
+</div>
+</div>
+
+<script>
+(function () {
+  const form = document.getElementById('teach-form');
+  const input = document.getElementById('teach-input');
+  const curriculum = document.getElementById('teach-curriculum');
+  const subject = document.getElementById('teach-subject');
+  const ibLevel = document.getElementById('teach-ib-level');
+  const modeSelect = document.getElementById('teach-mode');
+  const beginBtn = document.getElementById('teach-begin');
+  const makeSessionBtn = document.getElementById('teach-make-session');
+  const chatLog = document.getElementById('teach-chat-log');
+  const sendBtn = document.getElementById('teach-send');
+  const clearBtn = document.getElementById('teach-clear');
+  const sourceNote = document.getElementById('teach-source-note');
+  const chulkAvatarUrl = {{ chulk_avatar_url|tojson }};
+  const currentUsername = {{ username|tojson }};
+  const STORAGE_KEY = `chulk_ai_state_${currentUsername || 'anon'}`;
+
+  const instanceTabs = document.getElementById('teach-instance-tabs');
+  const newInstanceBtn = document.getElementById('teach-new-instance');
+
+  const subjectCache = {};
+  const instances = [];
+  let activeInstanceId = '';
+  let chatCounter = 1;
+  let editingInstanceId = '';
+
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function getActive() {
+    return instances.find((i) => i.id === activeInstanceId) || null;
+  }
+
+  function introText() {
+    return 'Hey, I am Chulk, your study buddy. Let us pick your curriculum, subject, and mode, then press Start together. If you choose Bot as Student, you teach me and I will cheer you on while gently checking your explanation. If you choose Bot as Teacher, I will break things down step by step like a friend helping you revise.';
+  }
+
+  function modeLabel(mode) {
+    return mode === 'teacher' ? 'Bot as Teacher' : 'Bot as Student';
+  }
+
+  function kickoffPrompt(mode) {
+    if (mode === 'teacher') {
+      return 'We just started teacher mode. Give a friendly opening, ask what specific subtopic the student wants, and propose a concise first learning step.';
+    }
+    return 'We just started student mode. Give a friendly opening and ask the student to explain one specific part in their own words so you can check correctness.';
+  }
+
+  function modeSwitchPrompt(mode) {
+    if (mode === 'teacher') {
+      return 'Mode changed to teacher. Briefly acknowledge the switch and teach with a short structured explanation of the requested topic, then ask a check question.';
+    }
+    return 'Mode changed to student. Briefly acknowledge the switch and ask the user to explain a specific concept in their own words so you can evaluate accuracy.';
+  }
+
+  function createInstance() {
+    const id = `inst-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const label = `Chat ${chatCounter++}`;
+    return {
+      id,
+      label,
+      curriculum: '',
+      subject: '',
+      ibLevel: '',
+      mode: 'listen',
+      topic: '',
+      draftInput: '',
+      messages: [{ role: 'assistant', kind: 'text', text: introText() }],
+    };
+  }
+
+  function startRenameInstance(instanceId) {
+    editingInstanceId = instanceId;
+    renderTabs();
+  }
+
+  function finishRenameInstance(instanceId, nextLabel) {
+    const inst = instances.find((i) => i.id === instanceId);
+    if (!inst) {
+      editingInstanceId = '';
+      renderTabs();
+      return;
+    }
+
+    const next = (nextLabel || '').trim().slice(0, 40);
+    if (next) {
+      inst.label = next;
+      saveState();
+    }
+
+    editingInstanceId = '';
+    renderTabs();
+  }
+
+  function sanitizeMessage(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+
+    const role = raw.role === 'user' ? 'user' : 'assistant';
+    if (role === 'user') {
+      const text = typeof raw.text === 'string' ? raw.text : '';
+      return text ? { role: 'user', text } : null;
+    }
+
+    const kind = raw.kind;
+    if (kind === 'result' && raw.data && typeof raw.data === 'object') {
+      return { role: 'assistant', kind: 'result', data: raw.data };
+    }
+    if (kind === 'error') {
+      return {
+        role: 'assistant',
+        kind: 'error',
+        text: (typeof raw.text === 'string' && raw.text) ? raw.text : 'Request failed.',
+      };
+    }
+
+    return {
+      role: 'assistant',
+      kind: 'text',
+      text: (typeof raw.text === 'string' && raw.text) ? raw.text : introText(),
+    };
+  }
+
+  function sanitizeInstance(raw, index) {
+    const fallbackId = `inst-restored-${index}-${Math.random().toString(36).slice(2, 7)}`;
+    const item = raw && typeof raw === 'object' ? raw : {};
+    const rawMessages = Array.isArray(item.messages) ? item.messages : [];
+    const messages = rawMessages
+      .map(sanitizeMessage)
+      .filter((msg) => !!msg);
+    return {
+      id: typeof item.id === 'string' && item.id ? item.id : fallbackId,
+      label: typeof item.label === 'string' && item.label ? item.label : `Chat ${index + 1}`,
+      curriculum: typeof item.curriculum === 'string' ? item.curriculum : '',
+      subject: typeof item.subject === 'string' ? item.subject : '',
+      ibLevel: typeof item.ibLevel === 'string' ? item.ibLevel : '',
+      mode: item.mode === 'teacher' ? 'teacher' : 'listen',
+      topic: typeof item.topic === 'string' ? item.topic : '',
+      draftInput: typeof item.draftInput === 'string' ? item.draftInput : '',
+      messages: messages.length ? messages : [{ role: 'assistant', kind: 'text', text: introText() }],
+    };
+  }
+
+  function scrollActiveTabIntoView() {
+    let activeBtn = null;
+    for (const btn of instanceTabs.querySelectorAll('button[data-instance-id]')) {
+      if (btn.dataset.instanceId === activeInstanceId) {
+        activeBtn = btn;
+        break;
+      }
+    }
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  function saveState() {
+    try {
+      const payload = {
+        chatCounter,
+        activeInstanceId,
+        instances,
+        subjectCache,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch (_err) {
+      // Ignore storage errors; chat still works in-memory.
+    }
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.instances) || !parsed.instances.length) return false;
+
+      instances.length = 0;
+      parsed.instances.forEach((inst, idx) => instances.push(sanitizeInstance(inst, idx)));
+
+      if (parsed.subjectCache && typeof parsed.subjectCache === 'object') {
+        for (const k of Object.keys(subjectCache)) delete subjectCache[k];
+        for (const [k, v] of Object.entries(parsed.subjectCache)) {
+          if (Array.isArray(v)) subjectCache[k] = v.filter((s) => typeof s === 'string');
+        }
+      }
+
+      const hasActive = instances.some((inst) => inst.id === parsed.activeInstanceId);
+      activeInstanceId = hasActive ? parsed.activeInstanceId : instances[0].id;
+      chatCounter = Number.isInteger(parsed.chatCounter) && parsed.chatCounter > 0
+        ? parsed.chatCounter
+        : (instances.length + 1);
+      return true;
+    } catch (_err) {
+      return false;
+    }
+  }
+
+  function stashActiveDraft() {
+    const inst = getActive();
+    if (!inst) return;
+    inst.draftInput = input.value;
+  }
+
+  function syncIbLevelVisibility(curr) {
+    const show = curr === 'IB';
+    ibLevel.classList.toggle('hidden', !show);
+    ibLevel.required = show;
+    if (!show) {
+      ibLevel.value = '';
+    }
+  }
+
+  function messageHtml(msg) {
+    if (msg.role === 'user') return escHtml(msg.text || '');
+    if (msg.kind === 'text') return escHtml(msg.text || '');
+    if (msg.kind === 'error') return `<span class="text-rose-600">${escHtml(msg.text || 'Request failed.')}</span>`;
+
+    const data = msg.data || {};
+    const feedback = escHtml(data.feedback || '');
+    const reassurance = escHtml(data.reassurance || '');
+    const followup = escHtml(data.follow_up_question || '');
+    const resources = Array.isArray(data.resources) ? data.resources : [];
+    const resourcesHtml = resources.length
+      ? `<ul class="list-disc pl-5 mt-2 space-y-1">${resources.map((r) => `<li>${escHtml(r)}</li>`).join('')}</ul>`
+      : '';
+    return `
+      <div>${feedback || 'No response available.'}</div>
+      ${reassurance ? `<div class="mt-1">${reassurance}</div>` : ''}
+      ${followup ? `<div class="mt-1">${followup}</div>` : ''}
+      ${resourcesHtml}
+    `;
+  }
+
+  function appendBubble(role, html) {
+    const wrap = document.createElement('div');
+    wrap.className = role === 'user' ? 'flex justify-end' : 'flex justify-start items-end gap-2';
+
+    if (role !== 'user') {
+      const avatar = document.createElement('img');
+      avatar.className = 'w-8 h-8 rounded-full border border-indigo-200 bg-white object-cover flex-shrink-0';
+      avatar.setAttribute('src', chulkAvatarUrl);
+      avatar.setAttribute('alt', 'Chulk avatar');
+      avatar.setAttribute('loading', 'lazy');
+      wrap.appendChild(avatar);
+    }
+
+    const bubble = document.createElement('div');
+    bubble.className = role === 'user'
+      ? 'max-w-[90%] rounded-2xl rounded-br-md px-3 py-2 bg-indigo-600 text-white text-sm shadow'
+      : 'max-w-[90%] rounded-2xl rounded-bl-md px-3 py-2 bg-white border border-gray-200 text-sm text-gray-700 shadow-sm';
+    bubble.innerHTML = html;
+    wrap.appendChild(bubble);
+    chatLog.appendChild(wrap);
+    chatLog.scrollTop = chatLog.scrollHeight;
+    return wrap;
+  }
+
+  function appendThinkingBubble() {
+    return appendBubble(
+      'assistant',
+      'I am thinking <span class="inline-flex gap-1 align-middle"><span class="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span><span class="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse [animation-delay:120ms]"></span><span class="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse [animation-delay:240ms]"></span></span>'
+    );
+  }
+
+  function renderTabs() {
+    instanceTabs.innerHTML = '';
+    for (const inst of instances) {
+      const row = document.createElement('div');
+      row.className = 'flex items-center gap-2';
+
+      const isEditing = editingInstanceId === inst.id;
+
+      if (isEditing) {
+        const inputWrap = document.createElement('div');
+        inputWrap.className = 'flex-1';
+
+        const renameInput = document.createElement('input');
+        renameInput.type = 'text';
+        renameInput.maxLength = 40;
+        renameInput.value = inst.label || '';
+        renameInput.className = 'w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400';
+        renameInput.dataset.renameInput = inst.id;
+
+        const save = document.createElement('button');
+        save.type = 'button';
+        save.className = 'px-2 py-2 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100';
+        save.textContent = 'Save';
+        save.addEventListener('click', (e) => {
+          e.stopPropagation();
+          finishRenameInstance(inst.id, renameInput.value);
+        });
+
+        const cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'px-2 py-2 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200';
+        cancel.textContent = 'Cancel';
+        cancel.addEventListener('click', (e) => {
+          e.stopPropagation();
+          editingInstanceId = '';
+          renderTabs();
+        });
+
+        renameInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            finishRenameInstance(inst.id, renameInput.value);
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            editingInstanceId = '';
+            renderTabs();
+          }
+        });
+
+        inputWrap.appendChild(renameInput);
+        row.appendChild(inputWrap);
+        row.appendChild(save);
+        row.appendChild(cancel);
+        instanceTabs.appendChild(row);
+        continue;
+      }
+
+      const btn = document.createElement('button');
+      const isActive = inst.id === activeInstanceId;
+      btn.type = 'button';
+      btn.dataset.instanceId = inst.id;
+      btn.className = isActive
+        ? 'flex-1 text-left px-3 py-2 rounded-lg text-xs font-semibold bg-indigo-600 text-white'
+        : 'flex-1 text-left px-3 py-2 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200';
+      btn.style.overflow = 'hidden';
+      btn.style.textOverflow = 'ellipsis';
+      btn.style.whiteSpace = 'nowrap';
+      btn.textContent = `${inst.label} · ${inst.mode === 'teacher' ? 'Teacher' : 'Student'}`;
+      btn.addEventListener('click', () => {
+        stashActiveDraft();
+        activeInstanceId = inst.id;
+        renderTabs();
+        renderActive();
+        saveState();
+      });
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'px-2 py-2 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100';
+      del.setAttribute('aria-label', `Delete ${inst.label}`);
+      del.title = `Delete ${inst.label}`;
+      del.textContent = 'X';
+      del.disabled = instances.length <= 1;
+      if (del.disabled) {
+        del.classList.add('opacity-40', 'cursor-not-allowed');
+      }
+
+      const edit = document.createElement('button');
+      edit.type = 'button';
+      edit.className = 'px-2 py-2 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200';
+      edit.setAttribute('aria-label', `Rename ${inst.label}`);
+      edit.title = `Rename ${inst.label}`;
+      edit.textContent = 'Edit';
+      edit.addEventListener('click', (e) => {
+        e.stopPropagation();
+        startRenameInstance(inst.id);
+      });
+
+      del.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (instances.length <= 1) return;
+        stashActiveDraft();
+        await deleteInstance(inst.id);
+      });
+
+      row.appendChild(btn);
+      row.appendChild(edit);
+      row.appendChild(del);
+      instanceTabs.appendChild(row);
+    }
+
+    scrollActiveTabIntoView();
+
+    if (editingInstanceId) {
+      const input = instanceTabs.querySelector(`input[data-rename-input="${editingInstanceId}"]`);
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }
+  }
+
+  function updateInputLock() {
+    const inst = getActive();
+    const unlocked = !!(inst && inst.topic);
+    input.disabled = !unlocked;
+    sendBtn.disabled = !unlocked;
+    input.placeholder = unlocked
+      ? (inst.mode === 'teacher'
+          ? `Ask me to teach a specific part in ${inst.topic} (e.g. determinants of demand).`
+          : `Explain a specific part in ${inst.topic} in your own words, and I will check correctness.`)
+      : 'Click Start after choosing curriculum and subject.';
+  }
+
+  function setSubjectOptions(items, selected = '') {
+    subject.innerHTML = '';
+    const first = document.createElement('option');
+    first.value = '';
+    first.textContent = 'Select subject';
+    subject.appendChild(first);
+    for (const s of items) {
+      const opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = s;
+      subject.appendChild(opt);
+    }
+    if (selected) subject.value = selected;
+  }
+
+  async function ensureSubjects(curr, selected = '') {
+    if (!curr) {
+      subject.disabled = true;
+      setSubjectOptions([], '');
+      sourceNote.textContent = 'Subjects are loaded from official curriculum lists.';
+      return;
+    }
+
+    if (subjectCache[curr]) {
+      subject.disabled = false;
+      setSubjectOptions(subjectCache[curr], selected);
+      sourceNote.textContent = `Loaded ${subjectCache[curr].length} official ${curr} subjects.`;
+      return;
+    }
+
+    subject.disabled = true;
+    setSubjectOptions([], '');
+    sourceNote.textContent = `Loading official ${curr} subjects...`;
+
+    try {
+      const res = await fetch(`/study/teach/subjects?curriculum=${encodeURIComponent(curr)}`);
+      const data = await res.json();
+      const items = Array.isArray(data.subjects) ? data.subjects : [];
+      subjectCache[curr] = items;
+      subject.disabled = false;
+      setSubjectOptions(items, selected);
+      sourceNote.textContent = items.length
+        ? `Loaded ${items.length} official ${curr} subjects.`
+        : `No subjects found for ${curr}.`;
+      saveState();
+    } catch (_err) {
+      subject.disabled = true;
+      setSubjectOptions([], '');
+      sourceNote.textContent = `Could not load ${curr} subjects right now.`;
+    }
+  }
+
+  function renderChatMessages() {
+    const inst = getActive();
+    chatLog.innerHTML = '';
+    if (!inst) return;
+    for (const msg of inst.messages) {
+      appendBubble(msg.role, messageHtml(msg));
+    }
+  }
+
+  async function renderActive() {
+    const inst = getActive();
+    if (!inst) return;
+    curriculum.value = inst.curriculum;
+    ibLevel.value = inst.ibLevel || '';
+    modeSelect.value = inst.mode || 'listen';
+    input.value = inst.draftInput || '';
+    syncIbLevelVisibility(inst.curriculum);
+    await ensureSubjects(inst.curriculum, inst.subject);
+    updateInputLock();
+    renderChatMessages();
+  }
+
+  function addInstance() {
+    stashActiveDraft();
+    const inst = createInstance();
+    instances.push(inst);
+    activeInstanceId = inst.id;
+    renderTabs();
+    renderActive();
+    saveState();
+  }
+
+  async function resetServerSession(inst) {
+    const body = new FormData();
+    body.append('instance_id', inst.id);
+    body.append('topic', inst.topic);
+    body.append('mode', inst.mode);
+    const res = await fetch('/study/teach/start', { method: 'POST', body });
+    if (!res.ok) throw new Error('reset_failed');
+  }
+
+  async function deleteServerInstance(instanceId) {
+    const body = new FormData();
+    body.append('instance_id', instanceId);
+    const res = await fetch('/study/teach/instance/delete', { method: 'POST', body });
+    if (!res.ok) throw new Error('delete_failed');
+  }
+
+  async function deleteInstance(instanceId) {
+    const idx = instances.findIndex((i) => i.id === instanceId);
+    if (idx === -1 || instances.length <= 1) return;
+
+    const wasActive = activeInstanceId === instanceId;
+    instances.splice(idx, 1);
+
+    if (wasActive) {
+      const next = instances[idx] || instances[idx - 1] || instances[0];
+      activeInstanceId = next.id;
+    }
+
+    renderTabs();
+    await renderActive();
+    saveState();
+
+    try {
+      await deleteServerInstance(instanceId);
+    } catch (_err) {
+      // Keep UI responsive even if server cleanup fails.
+    }
+  }
+
+  async function requestBotMessage(inst, userPrompt, forceGuide = false) {
+    const body = new FormData();
+    body.append('message', userPrompt);
+    body.append('topic', inst.topic);
+    body.append('mode', inst.mode);
+    body.append('instance_id', inst.id);
+    const res = await fetch('/study/teach/chat', { method: 'POST', body });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'request_failed');
+    if (forceGuide && data && data.verdict === 'needs_work') {
+      data.verdict = 'guide';
+    }
+    return data;
+  }
+
+  async function reframeForModeChange(inst, promptText) {
+    if (!inst.topic) return;
+    inst.messages.push({ role: 'assistant', kind: 'text', text: `Switched this active chat to ${modeLabel(inst.mode)}. I will adapt now.` });
+    renderTabs();
+    renderChatMessages();
+
+    const thinking = appendThinkingBubble();
+    try {
+      await resetServerSession(inst);
+      const data = await requestBotMessage(inst, promptText, true);
+      if (thinking.parentNode) thinking.parentNode.removeChild(thinking);
+      inst.messages.push({ role: 'assistant', kind: 'result', data });
+      renderChatMessages();
+      saveState();
+    } catch (_err) {
+      if (thinking.parentNode) thinking.parentNode.removeChild(thinking);
+      inst.messages.push({ role: 'assistant', kind: 'error', text: 'Could not reframe mode right now. Please try Start again.' });
+      renderChatMessages();
+      saveState();
+    }
+    updateInputLock();
+  }
+
+  curriculum.addEventListener('change', async () => {
+    const inst = getActive();
+    if (!inst) return;
+    inst.curriculum = curriculum.value.trim();
+    inst.subject = '';
+    inst.ibLevel = '';
+    inst.topic = '';
+    syncIbLevelVisibility(inst.curriculum);
+    updateInputLock();
+    await ensureSubjects(inst.curriculum, '');
+    renderTabs();
+    saveState();
+  });
+
+  ibLevel.addEventListener('change', () => {
+    const inst = getActive();
+    if (!inst) return;
+    inst.ibLevel = ibLevel.value.trim();
+    inst.topic = '';
+    updateInputLock();
+    saveState();
+  });
+
+  subject.addEventListener('change', () => {
+    const inst = getActive();
+    if (!inst) return;
+    inst.subject = subject.value.trim();
+    inst.topic = '';
+    updateInputLock();
+    saveState();
+  });
+
+  modeSelect.addEventListener('change', async () => {
+    const inst = getActive();
+    if (!inst) return;
+    inst.mode = modeSelect.value === 'teacher' ? 'teacher' : 'listen';
+    renderTabs();
+    if (inst.topic) {
+      await reframeForModeChange(inst, modeSwitchPrompt(inst.mode));
+    } else {
+      inst.messages.push({ role: 'assistant', kind: 'text', text: `Mode set to ${modeLabel(inst.mode)} for this active chat page. Click Start when ready.` });
+      renderChatMessages();
+      updateInputLock();
+      saveState();
+    }
+  });
+
+  newInstanceBtn.addEventListener('click', addInstance);
+
+  beginBtn.addEventListener('click', async () => {
+    const inst = getActive();
+    if (!inst) return;
+
+    const cur = curriculum.value.trim();
+    const sub = subject.value.trim();
+    if (!cur || !sub) {
+      inst.messages.push({ role: 'assistant', kind: 'text', text: 'Choose IB, A Level, or IGCSE, then pick a subject from the dropdown.' });
+      renderChatMessages();
+      return;
+    }
+    const level = ibLevel.value.trim();
+    if (cur === 'IB' && !level) {
+      inst.messages.push({ role: 'assistant', kind: 'text', text: 'For IB, also choose HL or SL before starting.' });
+      renderChatMessages();
+      return;
+    }
+
+    inst.curriculum = cur;
+    inst.subject = sub;
+    inst.ibLevel = cur === 'IB' ? level : '';
+    inst.mode = modeSelect.value === 'teacher' ? 'teacher' : 'listen';
+    inst.topic = cur === 'IB' ? `IB ${inst.ibLevel} ${sub}` : `${cur} ${sub}`;
+
+    inst.messages = [{ role: 'assistant', kind: 'text', text: `Session started for ${inst.topic} in ${modeLabel(inst.mode)} mode.` }];
+    renderTabs();
+    renderChatMessages();
+    updateInputLock();
+    input.focus();
+    saveState();
+
+    const thinking = appendThinkingBubble();
+    try {
+      await resetServerSession(inst);
+      const data = await requestBotMessage(inst, kickoffPrompt(inst.mode), true);
+      if (thinking.parentNode) thinking.parentNode.removeChild(thinking);
+      inst.messages.push({ role: 'assistant', kind: 'result', data });
+      renderChatMessages();
+      saveState();
+    } catch (_err) {
+      if (thinking.parentNode) thinking.parentNode.removeChild(thinking);
+      inst.messages.push({ role: 'assistant', kind: 'error', text: 'Could not start this session. Please try Start again.' });
+      renderChatMessages();
+      saveState();
+    }
+    updateInputLock();
+  });
+
+  makeSessionBtn.addEventListener('click', async () => {
+    const inst = getActive();
+    if (!inst) return;
+    if (!inst.topic) {
+      inst.messages.push({ role: 'assistant', kind: 'text', text: 'Start a chat session first, then I can make a study session for you.' });
+      renderChatMessages();
+      return;
+    }
+
+    const mins = 25;
+    const body = new FormData();
+    body.append('subject', inst.topic.slice(0, 50));
+    body.append('duration_minutes', String(mins));
+    body.append('notes', `Created from AI chat page (${modeLabel(inst.mode)}).`);
+
+    const thinking = appendThinkingBubble();
+    try {
+      const res = await fetch('/study/teach/create-session', { method: 'POST', body });
+      const data = await res.json();
+      if (thinking.parentNode) thinking.parentNode.removeChild(thinking);
+      if (!res.ok) {
+        inst.messages.push({ role: 'assistant', kind: 'error', text: data.error || 'Could not make study session.' });
+      } else {
+        inst.messages.push({ role: 'assistant', kind: 'text', text: `Done. I made a ${data.duration_minutes}-minute study session for ${data.subject}.` });
+      }
+      renderChatMessages();
+      saveState();
+    } catch (_err) {
+      if (thinking.parentNode) thinking.parentNode.removeChild(thinking);
+      inst.messages.push({ role: 'assistant', kind: 'error', text: 'Network issue while making the session. Please try again.' });
+      renderChatMessages();
+      saveState();
+    }
+  });
+
+  input.addEventListener('input', () => {
+    const inst = getActive();
+    if (!inst) return;
+    inst.draftInput = input.value;
+    saveState();
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (!sendBtn.disabled) form.requestSubmit();
+    }
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const inst = getActive();
+    if (!inst) return;
+    if (!inst.topic) {
+      inst.messages.push({ role: 'assistant', kind: 'text', text: 'Click Start after choosing curriculum and subject.' });
+      renderChatMessages();
+      return;
+    }
+
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    inst.messages.push({ role: 'user', text: msg });
+    inst.draftInput = '';
+    renderChatMessages();
+    input.value = '';
+    input.focus();
+    sendBtn.disabled = true;
+    saveState();
+
+    const thinkingBubble = appendThinkingBubble();
+
+    try {
+      const data = await requestBotMessage(inst, msg);
+      if (thinkingBubble.parentNode) thinkingBubble.parentNode.removeChild(thinkingBubble);
+      inst.messages.push({ role: 'assistant', kind: 'result', data });
+      renderChatMessages();
+      saveState();
+    } catch (_err) {
+      if (thinkingBubble.parentNode) thinkingBubble.parentNode.removeChild(thinkingBubble);
+      inst.messages.push({ role: 'assistant', kind: 'error', text: 'Network error. Please try again.' });
+      renderChatMessages();
+      saveState();
+    } finally {
+      updateInputLock();
+    }
+  });
+
+  clearBtn.addEventListener('click', () => {
+    const inst = getActive();
+    if (!inst) return;
+    inst.curriculum = '';
+    inst.subject = '';
+    inst.ibLevel = '';
+    inst.mode = 'listen';
+    inst.topic = '';
+    inst.draftInput = '';
+    inst.messages = [{ role: 'assistant', kind: 'text', text: introText() }];
+
+    curriculum.value = '';
+    subject.value = '';
+    ibLevel.value = '';
+    modeSelect.value = 'listen';
+    subject.disabled = true;
+    syncIbLevelVisibility('');
+    setSubjectOptions([], '');
+    sourceNote.textContent = 'Subjects are loaded from official curriculum lists.';
+    input.value = '';
+    renderTabs();
+    renderChatMessages();
+    updateInputLock();
+    saveState();
+  });
+
+  if (loadState()) {
+    renderTabs();
+    renderActive();
+  } else {
+    addInstance();
+  }
+})();
+</script>
+{% endblock %}

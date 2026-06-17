@@ -1,4 +1,4 @@
-<tr class="border-b hover:bg-gray-50">
+<tr class="border-b hover:bg-gray-50" id="meal-row-{{ meal.id }}">
   <td class="py-2 font-medium">{{ meal.name }}</td>
   <td class="py-2 text-gray-500 text-xs capitalize">{{ meal.meal_type.value }}</td>
   <td class="py-2 text-gray-600">{{ meal.calories }} kcal</td>
@@ -6,5 +6,17 @@
     {{ meal.protein_g or "—" }}g /
     {{ meal.carbs_g or "—" }}g /
     {{ meal.fat_g or "—" }}g
+  </td>
+  <td class="py-2 text-right">
+    <button
+      type="button"
+      class="text-xs text-red-500 hover:text-red-700"
+      hx-post="/diet/{{ meal.id }}/delete"
+      hx-target="closest tr"
+      hx-swap="delete"
+      hx-on::after-request="if (event.detail.successful) { htmx.ajax('GET', '/diet/summary', { target: '#diet-summary', swap: 'outerHTML' }); }"
+    >
+      Remove
+    </button>
   </td>
 </tr>

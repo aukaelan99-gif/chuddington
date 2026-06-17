@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Manage Foods & Meals - Chudlite™{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-5 gap-3 flex-wrap">
+  <h1 class="text-2xl font-bold">Manage Saved Foods & Meals</h1>
+  <a href="/diet" class="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50">Back to Diet</a>
+</div>
+
+<div class="bg-white rounded-xl shadow p-5 mb-5">
+  <div class="font-semibold mb-3">Saved Foods</div>
+  <p class="text-xs text-gray-500 mb-3">Editing a saved food automatically updates nutrition in saved meals that reference it.</p>
+  <form hx-post="/diet/foods/custom"
+        hx-target="#custom-food-list"
+        hx-swap="outerHTML"
+        class="flex flex-col gap-2 mb-4">
+    <div class="flex gap-2 flex-wrap">
+      <input type="text" name="name" placeholder="Food name" required maxlength="150"
+             class="flex-1 min-w-0 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+      <select name="category" class="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+        <option value="other">Other</option>
+        <option value="protein">Protein</option>
+        <option value="vegetable">Vegetable</option>
+        <option value="fruit">Fruit</option>
+        <option value="grain">Grain</option>
+        <option value="dairy">Dairy</option>
+        <option value="fat">Fat</option>
+        <option value="snack">Snack</option>
+        <option value="beverage">Beverage</option>
+      </select>
+      <input type="number" name="base_grams" placeholder="Serving (g)" min="1" max="5000" step="1" value="100"
+             class="w-36 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+    </div>
+    <div class="flex gap-2 flex-wrap">
+            <input type="number" name="protein_g" placeholder="Protein (g)" step="0.1" min="0" max="500" required
+             class="w-28 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            <input type="number" name="carbs_g" placeholder="Carbs (g)" step="0.1" min="0" max="500" required
+             class="w-28 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            <input type="number" name="fat_g" placeholder="Fat (g)" step="0.1" min="0" max="500" required
+             class="w-28 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+    </div>
+    <button type="submit" class="self-start px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">Save Custom Food</button>
+  </form>
+
+  {% include "partials/custom_food_list.html" %}
+</div>
+
+<div class="bg-white rounded-xl shadow p-5">
+  <div class="font-semibold mb-3">Saved Meals</div>
+  {% if saved_meal_templates %}
+    <div class="space-y-4">
+      {% for sm in saved_meal_templates %}
+      <div class="border rounded-lg p-4">
+        <form action="/diet/manage/saved-meals/{{ sm.id }}/update" method="post" class="flex gap-2 flex-wrap items-center mb-3">
+          <input type="text" name="name" value="{{ sm.name }}" required maxlength="100"
+                 class="flex-1 min-w-0 border rounded px-3 py-2 text-sm" />
+          <select name="meal_type" class="border rounded px-3 py-2 text-sm">
+            {% for t in meal_types %}
+              <option value="{{ t }}" {% if sm.meal_type.value == t %}selected{% endif %}>{{ t|capitalize }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="px-3 py-2 text-xs font-medium rounded border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100">Save Meal Changes</button>
+          <button type="submit" formaction="/diet/manage/saved-meals/{{ sm.id }}/add-today" class="px-3 py-2 text-xs font-medium rounded border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100">Add To Today</button>
+          <button type="submit" formaction="/diet/manage/saved-meals/{{ sm.id }}/delete" class="px-3 py-2 text-xs font-medium rounded border border-red-200 bg-red-50 text-red-600 hover:bg-red-100">Delete Meal</button>
+        </form>
+
+        {% if sm["items"] %}
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-gray-400 border-b text-xs uppercase">
+                <th class="py-2">Food</th>
+                <th class="py-2">Category</th>
+                <th class="py-2">Serving (g)</th>
+                <th class="py-2">Calories</th>
+                <th class="py-2">P / C / F</th>
+                <th class="py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in sm["items"] %}
+              <tr class="border-b last:border-0">
+                <td class="py-2 font-medium">{{ item.name }}{% if item.is_stale %} <span class="text-xs text-amber-600">(snapshot)</span>{% endif %}</td>
+                <td class="py-2 text-xs text-gray-500">{{ item.category|capitalize }}</td>
+                <td class="py-2">
+                  <form action="/diet/manage/saved-meals/{{ sm.id }}/update" method="post" class="flex gap-2 items-center">
+                    <input type="hidden" name="name" value="{{ sm.name }}" />
+                    <input type="hidden" name="meal_type" value="{{ sm.meal_type.value }}" />
+                    <input type="number" name="grams_{{ item.saved_item_id }}" min="1" step="1" value="{{ item.grams|int }}" class="w-24 border rounded px-2 py-1" />
+                    <button type="submit" class="text-xs px-2 py-1 rounded border border-gray-200 hover:bg-gray-50">Update</button>
+                  </form>
+                </td>
+                <td class="py-2 text-gray-600">{{ item.calories }} kcal</td>
+                <td class="py-2 text-gray-500 text-xs">{{ item.protein_g }}g / {{ item.carbs_g }}g / {{ item.fat_g }}g</td>
+                <td class="py-2 text-right">
+                  <form action="/diet/manage/saved-meals/{{ sm.id }}/items/{{ item.saved_item_id }}/delete" method="post">
+                    <button type="submit" class="text-xs px-2 py-1 rounded border border-red-200 bg-red-50 text-red-600 hover:bg-red-100">Remove</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-2 text-sm text-gray-600">Total: <strong>{{ sm.totals.calories }} kcal</strong> · {{ sm.totals.protein_g }}g / {{ sm.totals.carbs_g }}g / {{ sm.totals.fat_g }}g</div>
+        {% else %}
+        <p class="text-sm text-gray-400">No foods in this saved meal.</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-sm text-gray-400">No saved reusable meals yet. Save one from Meal Builder on the Diet page.</p>
+  {% endif %}
+</div>
+{% endblock %}

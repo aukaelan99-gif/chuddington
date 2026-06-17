@@ -1,38 +1,145 @@
 {% extends "base.html" %}
-{% block title %}Diet — StudyWell{% endblock %}
+{% block title %}Diet — Chudlite™{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">Diet Tracker</h1>
+<h1 class="text-2xl font-bold mb-5">Diet Tracker</h1>
 
-<!-- Calorie progress -->
-<div class="bg-white rounded-xl shadow p-4 mb-6">
-  <div class="flex justify-between text-sm mb-1">
-    <span class="font-medium">Calories Today</span>
-    <span class="text-gray-500">{{ macros.calories }} / {{ calorie_target }} kcal</span>
-  </div>
-  <div class="h-3 bg-gray-100 rounded-full overflow-hidden">
-    <div class="h-3 bg-orange-400 rounded-full progress-bar" style="width: {{ calorie_pct }}%"></div>
-  </div>
-  <!-- Macro totals -->
-  <div class="flex gap-6 mt-3 text-sm text-gray-600">
-    <span>🥩 Protein: <strong>{{ macros.protein }}g</strong></span>
-    <span>🍞 Carbs: <strong>{{ macros.carbs }}g</strong></span>
-    <span>🧈 Fat: <strong>{{ macros.fat }}g</strong></span>
-  </div>
-</div>
+{% include "partials/diet_summary.html" %}
 
 <!-- Water counter -->
 {% include "partials/water_widget.html" %}
 
-<!-- Add meal form -->
-<div class="bg-white rounded-xl shadow p-6 mb-6">
-  <div class="font-semibold mb-4">Log a Meal</div>
+<!-- Add food -->
+<div class="font-semibold mb-3">Add Food</div>
+<div class="grid lg:grid-cols-2 gap-5 mb-5 items-stretch">
+  <div class="bg-white rounded-xl shadow p-5 h-full flex flex-col overflow-hidden">
+    <div class="text-sm font-medium mb-2">Select Food</div>
+    <div class="text-xs text-gray-500 mb-3">Search preset foods or add from your saved custom foods.</div>
+      <div class="flex gap-2 mb-3 flex-wrap">
+        <select id="food-category"
+                class="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
+          <option value="all">All categories</option>
+          <option value="protein">Protein</option>
+          <option value="vegetable">Vegetables</option>
+          <option value="fruit">Fruit</option>
+          <option value="grain">Grains/Starch</option>
+          <option value="dairy">Dairy</option>
+          <option value="fat">Fats</option>
+          <option value="snack">Snacks</option>
+          <option value="beverage">Beverages</option>
+          <option value="other">Other</option>
+        </select>
+        <input type="text" id="food-search" placeholder="Search foods to add to meal..." autocomplete="off"
+               class="flex-1 min-w-0 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+      </div>
+    <div id="food-dropdown"
+         class="z-20 w-full bg-white border rounded-lg shadow-sm hidden max-h-72 overflow-y-auto"></div>
+    <p class="text-xs text-gray-500 mt-2">Search includes both preset foods and your custom foods.</p>
+
+    <div class="mt-4">
+      <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Saved Custom Food</div>
+      <div class="flex gap-2 flex-wrap">
+        <select id="saved-custom-food-select"
+                class="flex-1 min-w-0 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          <option value="">Select saved custom food...</option>
+          {% for f in custom_foods %}
+          <option value="{{ f.id }}"
+                  data-name="{{ f.name }}"
+                  data-category="{{ f.category or 'other' }}"
+                  data-base-grams="{{ f.base_grams }}"
+                  data-cal="{{ f.calories }}"
+                  data-protein="{{ f.protein_g }}"
+                  data-carbs="{{ f.carbs_g }}"
+                  data-fat="{{ f.fat_g }}">
+            {{ f.name }} ({{ f.base_grams|int }} g, {{ f.calories }} kcal)
+          </option>
+          {% endfor %}
+        </select>
+        <button type="button" id="add-saved-custom-food-btn"
+                class="px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100 text-sm font-medium">
+          Add Saved Food
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow p-5 h-full overflow-hidden">
+    <div class="text-sm font-medium mb-2">Create Custom Food</div>
+      <form id="custom-food-create-form"
+        class="flex flex-col gap-2 mb-3">
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+           <input type="text" name="name" placeholder="Food name" required maxlength="150"
+             class="sm:col-span-5 min-w-0 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+           <select name="category" class="sm:col-span-4 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+             <option value="other">Other</option>
+             <option value="protein">Protein</option>
+             <option value="vegetable">Vegetable</option>
+             <option value="fruit">Fruit</option>
+             <option value="grain">Grain</option>
+             <option value="dairy">Dairy</option>
+             <option value="fat">Fat</option>
+             <option value="snack">Snack</option>
+             <option value="beverage">Beverage</option>
+           </select>
+           <input type="number" name="base_grams" placeholder="Base grams" min="1" max="5000" step="1" value="100"
+               class="sm:col-span-3 min-w-0 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-12 gap-2 items-center">
+           <input type="number" name="protein_g" placeholder="Protein g" step="0.1" min="0" max="500" required
+               class="sm:col-span-3 min-w-0 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+           <input type="number" name="carbs_g" placeholder="Carbs g" step="0.1" min="0" max="500" required
+               class="sm:col-span-3 min-w-0 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+           <input type="number" name="fat_g" placeholder="Fat g" step="0.1" min="0" max="500" required
+               class="sm:col-span-3 min-w-0 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+           <div class="sm:col-span-3 min-w-0 px-3 py-2 text-xs text-gray-600 bg-gray-50 rounded-lg border flex items-center justify-end overflow-hidden whitespace-nowrap">
+             <span id="custom-food-create-kcal" class="font-semibold">0</span>&nbsp;kcal
+           </div>
+        </div>
+        <p class="text-xs text-gray-500">Serving size is in grams. Macros are grams per serving.</p>
+        <div class="flex gap-2 flex-wrap">
+          <button type="submit" name="custom_food_action" value="add"
+                  class="self-start px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-medium">
+            Add Custom Food
+          </button>
+          <button type="submit" name="custom_food_action" value="save"
+                  class="self-start px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">
+            Save Custom Food
+          </button>
+        </div>
+      </form>
+      <a href="/diet/manage" class="text-xs text-indigo-700 hover:text-indigo-900">Edit saved foods on Manage page</a>
+  </div>
+</div>
+
+<!-- Meal Builder -->
+<div class="bg-white rounded-xl shadow p-5 mb-5">
+  <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
+    <div class="font-semibold">Meal Builder</div>
+    <a href="/diet/saved-meals/manage" class="text-xs px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700">Manage Saved Meals</a>
+  </div>
+
+  <div class="bg-gray-50 border rounded-lg p-3 mb-3">
+    <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Saved Meals</div>
+    <div class="flex gap-2 flex-wrap">
+      <select id="saved-meal-template-select" class="flex-1 min-w-0 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
+        <option value="">Select saved meal...</option>
+        {% for sm in saved_meal_templates %}
+        <option value="{{ sm.id }}">{{ sm.name }} ({{ sm.meal_type.value|capitalize }} · {{ sm.totals.calories }} kcal)</option>
+        {% endfor %}
+      </select>
+      <button type="button" id="load-saved-meal-btn" class="px-4 py-2 bg-orange-100 text-orange-700 border border-orange-200 rounded-lg hover:bg-orange-200 text-sm font-medium">Load Into Builder</button>
+      <button type="button" id="add-saved-meal-today-btn" class="px-4 py-2 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-200 text-sm font-medium">Add To Today</button>
+    </div>
+  </div>
+
   <form hx-post="/diet/add"
         hx-target="#meal-list"
         hx-swap="afterbegin"
+      hx-on::after-request="if (event.detail.successful) { htmx.ajax('GET', '/diet/summary', { target: '#diet-summary', swap: 'outerHTML' }); }"
+        id="meal-form"
         class="flex flex-col gap-3">
-    <div class="flex gap-3">
-      <input type="text" name="name" placeholder="Food name" required maxlength="100"
-             class="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+    <div class="flex gap-2 flex-wrap">
+      <input type="text" name="name" id="meal-name" placeholder="Meal name (e.g. Lunch Bowl)" required maxlength="100"
+             class="flex-1 min-w-0 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
       <select name="meal_type" required
               class="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
         {% for t in meal_types %}
@@ -40,33 +147,64 @@
         {% endfor %}
       </select>
     </div>
-    <div class="flex gap-3">
-      <input type="number" name="calories" placeholder="Calories" min="0" max="5000" required
-             class="w-28 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
-      <input type="number" name="protein_g" placeholder="Protein g" step="0.1" min="0"
-             class="w-28 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
-      <input type="number" name="carbs_g" placeholder="Carbs g" step="0.1" min="0"
-             class="w-28 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
-      <input type="number" name="fat_g" placeholder="Fat g" step="0.1" min="0"
-             class="w-28 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+
+    <div class="overflow-x-auto border rounded-lg">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-gray-400 border-b text-xs uppercase bg-gray-50">
+            <th class="py-2 px-2">Food</th>
+            <th class="py-2 px-2">Food Type</th>
+            <th class="py-2 px-2">Grams</th>
+            <th class="py-2 px-2">Calories</th>
+            <th class="py-2 px-2">Protein</th>
+            <th class="py-2 px-2">Carbs</th>
+            <th class="py-2 px-2">Fat</th>
+            <th class="py-2 px-2"></th>
+          </tr>
+        </thead>
+        <tbody id="builder-items-body">
+          <tr id="builder-empty-row"><td colspan="8" class="py-3 px-2 text-gray-400 text-sm">No foods added yet.</td></tr>
+        </tbody>
+      </table>
     </div>
-    <button type="submit"
-            class="self-end px-5 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-medium">
-      Add Meal
-    </button>
+
+    <div class="flex gap-4 flex-wrap text-sm">
+      <div class="px-3 py-2 bg-gray-50 rounded-lg">Calories: <strong id="total-calories">0</strong></div>
+      <div class="px-3 py-2 bg-gray-50 rounded-lg">Protein: <strong id="total-protein">0.0</strong>g</div>
+      <div class="px-3 py-2 bg-gray-50 rounded-lg">Carbs: <strong id="total-carbs">0.0</strong>g</div>
+      <div class="px-3 py-2 bg-gray-50 rounded-lg">Fat: <strong id="total-fat">0.0</strong>g</div>
+    </div>
+
+    <input type="hidden" name="calories" id="meal-calories" value="0" />
+    <input type="hidden" name="protein_g" id="meal-protein" value="0" />
+    <input type="hidden" name="carbs_g" id="meal-carbs" value="0" />
+    <input type="hidden" name="fat_g" id="meal-fat" value="0" />
+    <input type="hidden" name="items_json" id="meal-items-json" value="[]" />
+
+    <div class="flex items-center gap-3 flex-wrap">
+      <button type="submit"
+              class="px-5 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-medium">
+        Add Meal
+      </button>
+      <button type="button" id="save-meal-template-btn"
+              class="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">
+        Save To Saved Meals
+      </button>
+    </div>
   </form>
 </div>
 
-<!-- Meals by type -->
-<div class="bg-white rounded-xl shadow p-6 mb-6">
+<!-- Today's meals -->
+<div class="bg-white rounded-xl shadow p-5 mb-5">
   <div class="font-semibold mb-3">Today's Meals</div>
   <table class="w-full text-sm">
     <thead>
-      <tr class="text-left text-gray-400 border-b">
+      <tr class="text-left text-gray-400 border-b text-xs uppercase">
         <th class="pb-2">Name</th>
         <th class="pb-2">Type</th>
-        <th class="pb-2">Calories</th>
-        <th class="pb-2">P/C/F (g)</th>
+        <th class="pb-2">Cal</th>
+        <th class="pb-2">P / C / F</th>
+        <th class="pb-2"></th>
       </tr>
     </thead>
     <tbody id="meal-list">
@@ -77,26 +215,450 @@
   </table>
 </div>
 
-<!-- Macro pie chart -->
-{% if total_macros > 0 %}
-<div class="bg-white rounded-xl shadow p-6">
-  <div class="font-semibold mb-4">Macro Distribution</div>
-  <div class="max-w-xs mx-auto">
-    <canvas id="macroChart"></canvas>
-  </div>
-</div>
 <script>
-new Chart(document.getElementById('macroChart'), {
-  type: 'pie',
-  data: {
-    labels: ['Protein', 'Carbs', 'Fat'],
-    datasets: [{
-      data: [{{ macros.protein }}, {{ macros.carbs }}, {{ macros.fat }}],
-      backgroundColor: ['rgba(99,102,241,0.8)', 'rgba(251,146,60,0.8)', 'rgba(250,204,21,0.8)'],
-    }]
-  },
-  options: { responsive: true }
+const searchInput = document.getElementById('food-search');
+const dropdown = document.getElementById('food-dropdown');
+const categoryInput = document.getElementById('food-category');
+const builderBody = document.getElementById('builder-items-body');
+const emptyRow = document.getElementById('builder-empty-row');
+
+let mealItems = [];
+
+function round1(v) { return Math.round(v * 10) / 10; }
+
+function computeItem(item) {
+  const factor = item.grams / item.base_grams;
+  return {
+    calories: Math.round(item.base_calories * factor),
+    protein: round1(item.base_protein * factor),
+    carbs: round1(item.base_carbs * factor),
+    fat: round1(item.base_fat * factor),
+  };
+}
+
+function renderMealBuilder() {
+  if (!mealItems.length) {
+    builderBody.innerHTML = '<tr id="builder-empty-row"><td colspan="8" class="py-3 px-2 text-gray-400 text-sm">No foods added yet.</td></tr>';
+  } else {
+    builderBody.innerHTML = mealItems.map((item, idx) => {
+      const m = computeItem(item);
+      return `
+        <tr class="border-b" data-idx="${idx}">
+          <td class="py-2 px-2 font-medium">${item.name}</td>
+          <td class="py-2 px-2 text-xs text-gray-500">${item.category || 'other'}${item.is_custom ? ' (custom)' : ''}</td>
+          <td class="py-2 px-2"><input type="number" min="1" step="1" value="${Math.round(item.grams)}" class="grams-input w-20 border rounded px-2 py-1" data-idx="${idx}" /></td>
+          <td class="py-2 px-2">${m.calories}</td>
+          <td class="py-2 px-2">${m.protein}</td>
+          <td class="py-2 px-2">${m.carbs}</td>
+          <td class="py-2 px-2">${m.fat}</td>
+          <td class="py-2 px-2 text-right"><button type="button" class="remove-item text-xs text-red-500" data-idx="${idx}">Remove</button></td>
+        </tr>`;
+    }).join('');
+  }
+
+  const totals = mealItems.reduce((acc, item) => {
+    const m = computeItem(item);
+    acc.calories += m.calories;
+    acc.protein += m.protein;
+    acc.carbs += m.carbs;
+    acc.fat += m.fat;
+    return acc;
+  }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
+  document.getElementById('total-calories').textContent = totals.calories;
+  document.getElementById('total-protein').textContent = round1(totals.protein).toFixed(1);
+  document.getElementById('total-carbs').textContent = round1(totals.carbs).toFixed(1);
+  document.getElementById('total-fat').textContent = round1(totals.fat).toFixed(1);
+
+  document.getElementById('meal-calories').value = totals.calories;
+  document.getElementById('meal-protein').value = round1(totals.protein);
+  document.getElementById('meal-carbs').value = round1(totals.carbs);
+  document.getElementById('meal-fat').value = round1(totals.fat);
+  document.getElementById('meal-items-json').value = JSON.stringify(mealItems.map(i => ({
+    food_id: i.id,
+    name: i.name,
+    category: i.category,
+    grams: i.grams,
+    base_grams: i.base_grams,
+    calories: i.base_calories,
+    protein_g: i.base_protein,
+    carbs_g: i.base_carbs,
+    fat_g: i.base_fat,
+    is_custom: i.is_custom,
+  })));
+
+  builderBody.querySelectorAll('.grams-input').forEach(el => {
+    const commitGrams = () => {
+      const idx = Number(el.dataset.idx);
+      const parsed = Number(el.value);
+      const grams = Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;
+      mealItems[idx].grams = grams;
+      renderMealBuilder();
+    };
+
+    // Commit on blur/change so users can freely clear and retype values.
+    el.addEventListener('change', commitGrams);
+    el.addEventListener('blur', commitGrams);
+    el.addEventListener('keydown', (evt) => {
+      if (evt.key === 'Enter') {
+        evt.preventDefault();
+        commitGrams();
+      }
+    });
+  });
+
+  builderBody.querySelectorAll('.remove-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = Number(el.dataset.idx);
+      mealItems.splice(idx, 1);
+      renderMealBuilder();
+    });
+  });
+}
+
+let debounceTimer;
+async function runFoodSearch() {
+  clearTimeout(debounceTimer);
+  const q = searchInput.value.trim();
+  const category = categoryInput.value;
+  if (q.length < 1 && category === 'all') { dropdown.classList.add('hidden'); return; }
+  debounceTimer = setTimeout(async () => {
+    const res = await fetch(`/diet/foods/search?q=${encodeURIComponent(q)}&category=${encodeURIComponent(category)}`);
+    const foods = await res.json();
+    if (!foods.length) {
+      dropdown.innerHTML = '<div class="px-3 py-2 text-sm text-gray-400">No foods found.</div>';
+      dropdown.classList.remove('hidden');
+      return;
+    }
+    dropdown.innerHTML = foods.map(f => `
+      <div class="food-option px-3 py-2 hover:bg-orange-50 cursor-pointer border-b last:border-0 text-sm"
+           data-id="${f.id}" data-base-grams="${f.base_grams}"
+           data-custom="${f.is_custom ? '1' : '0'}"
+           data-category="${f.category || 'other'}"
+           data-name="${f.name}" data-cal="${f.calories}"
+           data-protein="${f.protein_g}" data-carbs="${f.carbs_g}" data-fat="${f.fat_g}">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="font-medium leading-tight truncate">${f.name}</div>
+            <div class="text-xs text-gray-400 mt-0.5 flex items-center gap-2 flex-wrap">
+              <span>${Math.round(f.base_grams)}g base</span>
+              <span class="text-slate-400">${f.category}</span>
+              ${f.is_custom ? '<span class="text-indigo-500">custom</span>' : ''}
+            </div>
+          </div>
+          <div class="text-xs text-gray-600 whitespace-nowrap text-right leading-tight mt-0.5">
+            ${f.calories} kcal · P${f.protein_g} C${f.carbs_g} F${f.fat_g}
+          </div>
+        </div>
+      </div>`).join('');
+    dropdown.classList.remove('hidden');
+    dropdown.querySelectorAll('.food-option').forEach(el => {
+      el.addEventListener('click', () => {
+        const item = {
+          id: el.dataset.id,
+          name: el.dataset.name,
+          category: el.dataset.category || 'other',
+          base_grams: Math.max(1, Number(el.dataset.baseGrams || 100)),
+          grams: Math.max(1, Number(el.dataset.baseGrams || 100)),
+          base_calories: Number(el.dataset.cal || 0),
+          base_protein: Number(el.dataset.protein || 0),
+          base_carbs: Number(el.dataset.carbs || 0),
+          base_fat: Number(el.dataset.fat || 0),
+          is_custom: el.dataset.custom === '1',
+        };
+        mealItems.push(item);
+        renderMealBuilder();
+        searchInput.value = '';
+        dropdown.classList.add('hidden');
+      });
+    });
+  }, 250);
+}
+
+searchInput.addEventListener('input', runFoodSearch);
+categoryInput.addEventListener('change', runFoodSearch);
+
+document.getElementById('meal-form').addEventListener('submit', (e) => {
+  if (!mealItems.length) {
+    e.preventDefault();
+    alert('Add at least one food to the meal first.');
+    return;
+  }
 });
+
+document.addEventListener('click', e => {
+  if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+    dropdown.classList.add('hidden');
+  }
+});
+
+function parseNum(input) {
+  const n = Number(input?.value || 0);
+  return Number.isFinite(n) ? Math.max(0, Math.min(500, n)) : 0;
+}
+
+function computeCaloriesFromMacros(protein, carbs, fat) {
+  return Math.round(protein * 4 + carbs * 4 + fat * 9);
+}
+
+function bindCreateCustomFoodCalories() {
+  const form = document.getElementById('custom-food-create-form');
+  if (!form) return;
+  const proteinInput = form.querySelector('input[name="protein_g"]');
+  const carbsInput = form.querySelector('input[name="carbs_g"]');
+  const fatInput = form.querySelector('input[name="fat_g"]');
+  const kcalEl = document.getElementById('custom-food-create-kcal');
+  if (!proteinInput || !carbsInput || !fatInput || !kcalEl) return;
+
+  const recalc = () => {
+    const protein = parseNum(proteinInput);
+    const carbs = parseNum(carbsInput);
+    const fat = parseNum(fatInput);
+    kcalEl.textContent = String(computeCaloriesFromMacros(protein, carbs, fat));
+  };
+
+  ['input', 'change'].forEach(evt => {
+    proteinInput.addEventListener(evt, recalc);
+    carbsInput.addEventListener(evt, recalc);
+    fatInput.addEventListener(evt, recalc);
+  });
+
+  recalc();
+}
+
+function clampInputValue(input, min, max) {
+  if (!input) return;
+  const n = Number(input.value);
+  if (!Number.isFinite(n)) return;
+  input.value = String(Math.max(min, Math.min(max, n)));
+}
+
+function bindCreateCustomFoodInputClamps() {
+  const form = document.getElementById('custom-food-create-form');
+  if (!form) return;
+  const baseInput = form.querySelector('input[name="base_grams"]');
+  const proteinInput = form.querySelector('input[name="protein_g"]');
+  const carbsInput = form.querySelector('input[name="carbs_g"]');
+  const fatInput = form.querySelector('input[name="fat_g"]');
+
+  const clampAll = () => {
+    clampInputValue(baseInput, 1, 5000);
+    clampInputValue(proteinInput, 0, 500);
+    clampInputValue(carbsInput, 0, 500);
+    clampInputValue(fatInput, 0, 500);
+  };
+
+  [baseInput, proteinInput, carbsInput, fatInput].forEach((input) => {
+    if (!input) return;
+    input.addEventListener('change', clampAll);
+    input.addEventListener('blur', clampAll);
+  });
+}
+
+function bindCreateCustomFoodActions() {
+  const form = document.getElementById('custom-food-create-form');
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    const submitter = e.submitter;
+    const action = submitter?.value || 'save';
+    e.preventDefault();
+
+    const name = (form.querySelector('input[name="name"]')?.value || '').trim();
+    if (!name) {
+      alert('Enter a custom food name.');
+      return;
+    }
+
+    const category = form.querySelector('select[name="category"]')?.value || 'other';
+    const baseGrams = Math.max(1, Number(form.querySelector('input[name="base_grams"]')?.value || 100));
+    const protein = parseNum(form.querySelector('input[name="protein_g"]'));
+    const carbs = parseNum(form.querySelector('input[name="carbs_g"]'));
+    const fat = parseNum(form.querySelector('input[name="fat_g"]'));
+    const calories = computeCaloriesFromMacros(protein, carbs, fat);
+
+    if (action === 'save') {
+      const payload = new URLSearchParams();
+      payload.set('name', name);
+      payload.set('category', category);
+      payload.set('base_grams', String(baseGrams));
+      payload.set('protein_g', String(protein));
+      payload.set('carbs_g', String(carbs));
+      payload.set('fat_g', String(fat));
+
+      const res = await fetch('/diet/foods/custom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: payload.toString(),
+      });
+      if (!res.ok) {
+        alert('Could not save custom food.');
+        return;
+      }
+      window.location.reload();
+      return;
+    }
+
+    mealItems.push({
+      id: `custom-temp-${Date.now()}`,
+      name,
+      category,
+      base_grams: baseGrams,
+      grams: baseGrams,
+      base_calories: calories,
+      base_protein: protein,
+      base_carbs: carbs,
+      base_fat: fat,
+      is_custom: true,
+    });
+
+    renderMealBuilder();
+    form.reset();
+    const baseInput = form.querySelector('input[name="base_grams"]');
+    if (baseInput) baseInput.value = '100';
+    const kcalEl = document.getElementById('custom-food-create-kcal');
+    if (kcalEl) kcalEl.textContent = '0';
+  });
+}
+
+function bindSavedCustomFoodDropdown() {
+  const select = document.getElementById('saved-custom-food-select');
+  const btn = document.getElementById('add-saved-custom-food-btn');
+  if (!select || !btn) return;
+
+  btn.addEventListener('click', () => {
+    const opt = select.options[select.selectedIndex];
+    if (!opt || !opt.value) return;
+
+    const item = {
+      id: opt.value,
+      name: opt.dataset.name || 'Custom Food',
+      category: opt.dataset.category || 'other',
+      base_grams: Math.max(1, Number(opt.dataset.baseGrams || 100)),
+      grams: Math.max(1, Number(opt.dataset.baseGrams || 100)),
+      base_calories: Number(opt.dataset.cal || 0),
+      base_protein: Number(opt.dataset.protein || 0),
+      base_carbs: Number(opt.dataset.carbs || 0),
+      base_fat: Number(opt.dataset.fat || 0),
+      is_custom: true,
+    };
+
+    mealItems.push(item);
+    renderMealBuilder();
+    select.value = '';
+  });
+}
+
+function getBuilderSnapshot() {
+  return {
+    name: (document.getElementById('meal-name')?.value || '').trim(),
+    mealType: document.querySelector('#meal-form select[name="meal_type"]')?.value || 'breakfast',
+    items: [...mealItems],
+  };
+}
+
+function bindSavedMealTemplateActions() {
+  const saveBtn = document.getElementById('save-meal-template-btn');
+  const loadBtn = document.getElementById('load-saved-meal-btn');
+  const addTodayBtn = document.getElementById('add-saved-meal-today-btn');
+  const select = document.getElementById('saved-meal-template-select');
+
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async () => {
+      const snap = getBuilderSnapshot();
+      if (!snap.name) {
+        alert('Enter a meal name before saving.');
+        return;
+      }
+      if (!snap.items.length) {
+        alert('Add at least one food to the meal before saving.');
+        return;
+      }
+
+      const body = new URLSearchParams();
+      body.set('name', snap.name);
+      body.set('meal_type', snap.mealType);
+      body.set('items_json', JSON.stringify(snap.items.map(i => ({
+        food_id: i.id,
+        name: i.name,
+        category: i.category,
+        grams: i.grams,
+        base_grams: i.base_grams,
+        calories: i.base_calories,
+        protein_g: i.base_protein,
+        carbs_g: i.base_carbs,
+        fat_g: i.base_fat,
+      }))));
+
+      const res = await fetch('/diet/saved-meals/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString(),
+      });
+
+      if (!res.ok) {
+        alert('Could not save reusable meal.');
+        return;
+      }
+
+      window.location.reload();
+    });
+  }
+
+  if (loadBtn && select) {
+    loadBtn.addEventListener('click', async () => {
+      const templateId = select.value;
+      if (!templateId) return;
+      const res = await fetch(`/diet/saved-meals/${encodeURIComponent(templateId)}/json`);
+      if (!res.ok) {
+        alert('Could not load saved meal.');
+        return;
+      }
+      const data = await res.json();
+      mealItems = (data.items || []).map(item => ({
+        id: item.food_item_id || `snapshot-${item.saved_item_id}`,
+        name: item.name,
+        category: item.category || 'other',
+        base_grams: Math.max(1, Number(item.base_grams || 100)),
+        grams: Math.max(1, Number(item.grams || item.base_grams || 100)),
+        base_calories: Number(item.base_calories || 0),
+        base_protein: Number(item.base_protein_g || 0),
+        base_carbs: Number(item.base_carbs_g || 0),
+        base_fat: Number(item.base_fat_g || 0),
+        is_custom: true,
+      }));
+      const mealNameInput = document.getElementById('meal-name');
+      if (mealNameInput && data.name) mealNameInput.value = data.name;
+      const mealTypeSelect = document.querySelector('#meal-form select[name="meal_type"]');
+      if (mealTypeSelect && data.meal_type && data.meal_type.value) {
+        mealTypeSelect.value = data.meal_type.value;
+      } else if (mealTypeSelect && data.meal_type) {
+        mealTypeSelect.value = data.meal_type;
+      }
+      renderMealBuilder();
+    });
+  }
+
+  if (addTodayBtn && select) {
+    addTodayBtn.addEventListener('click', async () => {
+      const templateId = select.value;
+      if (!templateId) return;
+      const res = await fetch(`/diet/saved-meals/${encodeURIComponent(templateId)}/add-today`, { method: 'POST' });
+      if (!res.ok) {
+        alert('Could not add saved meal to today.');
+        return;
+      }
+      window.location.reload();
+    });
+  }
+}
+
+bindCreateCustomFoodCalories();
+bindCreateCustomFoodInputClamps();
+bindCreateCustomFoodActions();
+bindSavedCustomFoodDropdown();
+bindSavedMealTemplateActions();
 </script>
-{% endif %}
+
 {% endblock %}
+

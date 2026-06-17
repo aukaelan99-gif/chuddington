@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Chulk mentor avatar">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#14532d"/>
+      <stop offset="100%" stop-color="#16a34a"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="64" fill="url(#bg)"/>
+  <circle cx="64" cy="54" r="22" fill="#ecfeff"/>
+  <path d="M26 108c8-17 21-26 38-26 16 0 30 9 38 26" fill="#ecfeff"/>
+  <rect x="40" y="40" width="48" height="8" rx="4" fill="#0f172a"/>
+  <rect x="46" y="42" width="10" height="18" rx="2" fill="#0f172a"/>
+  <rect x="72" y="42" width="10" height="18" rx="2" fill="#0f172a"/>
+  <circle cx="56" cy="55" r="3" fill="#0f172a"/>
+  <circle cx="72" cy="55" r="3" fill="#0f172a"/>
+  <path d="M56 64c2 2 5 3 8 3 3 0 6-1 8-3" stroke="#0f172a" stroke-width="3" fill="none" stroke-linecap="round"/>
+</svg>

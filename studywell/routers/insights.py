@@ -51,5 +51,5 @@ async def export_data(
 
     return JSONResponse(
         content=json.loads(json.dumps(payload, default=serial)),
-        headers={"Content-Disposition": "attachment; filename=studywell_export.json"},
+        headers={"Content-Disposition": "attachment; filename=chudlite_export.json"},
     )
