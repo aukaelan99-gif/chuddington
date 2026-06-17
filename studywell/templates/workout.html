@@ -24,10 +24,10 @@
            hx-get="/workout/search"
            hx-trigger="keyup changed delay:200ms"
            hx-target="#ex-suggestions"
-           hx-include="#ex-search"
+            hx-swap="innerHTML"
            name="q" />
     <ul id="ex-suggestions"
-        class="absolute z-20 w-full bg-white border rounded-lg shadow-lg mt-1 hidden max-h-56 overflow-y-auto"></ul>
+          class="absolute z-20 w-full bg-white border rounded-lg shadow-lg mt-1 hidden max-h-56 overflow-y-auto"></ul>
   </div>
 
   <!-- Add form (filled by clicking a suggestion or manually) -->
@@ -44,6 +44,23 @@
       <option value="bodyweight">Bodyweight</option>
       <option value="cardio">Cardio</option>
     </select>
+        <select name="muscle_group" id="manual-muscle-select"
+        class="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      <option value="other">Other</option>
+      <option value="chest">Chest</option>
+      <option value="back">Back</option>
+      <option value="shoulders">Shoulders</option>
+      <option value="biceps">Biceps</option>
+      <option value="triceps">Triceps</option>
+      <option value="quads">Quads</option>
+      <option value="hamstrings">Hamstrings</option>
+      <option value="glutes">Glutes</option>
+      <option value="core">Core</option>
+      <option value="calves">Calves</option>
+      <option value="forearms">Forearms</option>
+      <option value="full_body">Full Body</option>
+      <option value="cardio">Cardio</option>
+        </select>
     <button type="submit"
             class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">
       + Add
@@ -63,18 +80,8 @@
 document.body.addEventListener('htmx:afterSwap', function(e) {
   if (e.detail.target.id === 'ex-suggestions') {
     const ul = e.detail.target;
-    try {
-      const results = JSON.parse(ul.innerHTML || '[]');
-      if (!Array.isArray(results) || results.length === 0) { ul.classList.add('hidden'); return; }
-      ul.innerHTML = results.map(r =>
-        `<li class="px-3 py-2 hover:bg-indigo-50 cursor-pointer text-sm flex justify-between"
-             onclick="fillExercise('${r.name.replace(/'/g,"\\'")}','${r.type}')">
-           <span>${r.name}</span>
-           <span class="text-xs text-gray-400">${r.type}</span>
-         </li>`
-      ).join('');
-      ul.classList.remove('hidden');
-    } catch(err) { ul.classList.add('hidden'); }
+    if ((ul.textContent || '').trim().length === 0) ul.classList.add('hidden');
+    else ul.classList.remove('hidden');
   }
 });
 
@@ -84,10 +91,11 @@ document.addEventListener('click', function(e) {
   }
 });
 
-function fillExercise(name, type) {
+function fillExercise(name, type, muscle) {
   document.getElementById('ex-name-input').value  = name;
-  document.getElementById('ex-search').value       = name;
+  document.getElementById('ex-search').value      = name;
   document.getElementById('ex-type-select').value  = type;
+  document.getElementById('manual-muscle-select').value = muscle;
   document.getElementById('ex-suggestions').classList.add('hidden');
 }
 </script>

@@ -27,55 +27,16 @@
   </div>
 </div>
 
-<!-- Log form -->
-<div class="bg-white rounded-xl shadow p-6 mb-6">
-  <div class="font-semibold mb-4">Log Exercise</div>
-  <form hx-post="/exercise/add"
-        hx-target="#entry-list"
-        hx-swap="afterbegin"
-        class="flex flex-col gap-3">
-    <div class="flex gap-3">
-      <input type="text" name="activity" placeholder="Activity" required maxlength="100"
-             class="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
-      <input type="number" name="duration_minutes" placeholder="Mins" min="1" max="600" required
-             class="w-24 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
-    </div>
-    <select name="intensity" required
-            class="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
-      {% for i in intensities %}
-        <option value="{{ i }}">{{ i | capitalize }}</option>
-      {% endfor %}
-    </select>
-    <button type="submit"
-            class="self-end px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">
-      Add Entry
-    </button>
-  </form>
-</div>
-
-<!-- Today's entries -->
-<div class="bg-white rounded-xl shadow p-6 mb-6">
-  <div class="font-semibold mb-3">Today's Entries</div>
-  <table class="w-full text-sm">
-    <thead>
-      <tr class="text-left text-gray-400 border-b">
-        <th class="pb-2">Activity</th>
-        <th class="pb-2">Duration</th>
-        <th class="pb-2">Intensity</th>
-      </tr>
-    </thead>
-    <tbody id="entry-list">
-      {% for entry in entries %}
-        {% include "partials/exercise_row.html" %}
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
 <!-- Weekly chart -->
-<div class="bg-white rounded-xl shadow p-6">
+<div class="bg-white rounded-xl shadow p-6 mb-6">
   <div class="font-semibold mb-4">Exercise Minutes — Last 7 Days</div>
   <canvas id="exerciseChart" height="120"></canvas>
+</div>
+
+<!-- Muscle distribution chart -->
+<div class="bg-white rounded-xl shadow p-6">
+  <div class="font-semibold mb-4">Muscle Groups Worked — Last 7 Days</div>
+  <canvas id="muscleChart" height="120"></canvas>
 </div>
 
 <script>
@@ -93,6 +54,25 @@ new Chart(document.getElementById('exerciseChart'), {
     }]
   },
   options: { responsive: true, scales: { y: { beginAtZero: true, title: { display: true, text: 'Minutes' } } } }
+});
+
+new Chart(document.getElementById('muscleChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ dist_labels | tojson }},
+    datasets: [{
+      label: 'Sets Logged',
+      data: {{ dist_values | tojson }},
+      backgroundColor: 'rgba(79,70,229,0.75)',
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: { beginAtZero: true, title: { display: true, text: 'Sets' } }
+    }
+  }
 });
 </script>
 {% endblock %}

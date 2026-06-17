@@ -73,6 +73,31 @@ class ExerciseType(str, enum.Enum):
     cardio     = "cardio"
 
 
+class MuscleGroup(str, enum.Enum):
+    chest = "chest"
+    back = "back"
+    shoulders = "shoulders"
+    biceps = "biceps"
+    triceps = "triceps"
+    quads = "quads"
+    hamstrings = "hamstrings"
+    glutes = "glutes"
+    core = "core"
+    full_body = "full_body"
+    cardio = "cardio"
+    calves = "calves"
+    forearms = "forearms"
+    other = "other"
+
+
+class ExerciseCatalog(Base):
+    __tablename__ = "exercise_catalog"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    name: Mapped[str] = mapped_column(String(100), unique=True)
+    exercise_type: Mapped[ExerciseType] = mapped_column(SAEnum(ExerciseType))
+    muscle_group: Mapped[MuscleGroup] = mapped_column(SAEnum(MuscleGroup), default=MuscleGroup.other)
+
+
 class Workout(Base):
     __tablename__ = "workouts"
     id:       Mapped[str]      = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -90,6 +115,7 @@ class WorkoutExercise(Base):
     workout_id:    Mapped[str]          = mapped_column(ForeignKey("workouts.id"))
     name:          Mapped[str]          = mapped_column(String(100))
     exercise_type: Mapped[ExerciseType] = mapped_column(SAEnum(ExerciseType))
+    muscle_group:  Mapped[MuscleGroup]  = mapped_column(SAEnum(MuscleGroup), default=MuscleGroup.other)
     order:         Mapped[int]          = mapped_column(Integer, default=0)
     workout:       Mapped["Workout"]    = relationship(back_populates="exercises")
     sets:          Mapped[list["WorkoutSet"]] = relationship(

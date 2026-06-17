@@ -1,43 +1,34 @@
 from datetime import date
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
-from models import Workout, WorkoutExercise, WorkoutSet, ExerciseType
+from models import (
+    Workout,
+    WorkoutExercise,
+    WorkoutSet,
+    ExerciseType,
+    ExerciseCatalog,
+    MuscleGroup,
+)
 import uuid
 
-EXERCISE_LIBRARY = [
-    {"name": "Bench Press",      "type": "weighted"},
-    {"name": "Squat",            "type": "weighted"},
-    {"name": "Deadlift",         "type": "weighted"},
-    {"name": "Overhead Press",   "type": "weighted"},
-    {"name": "Barbell Row",      "type": "weighted"},
-    {"name": "Dumbbell Curl",    "type": "weighted"},
-    {"name": "Tricep Pushdown",  "type": "weighted"},
-    {"name": "Leg Press",        "type": "weighted"},
-    {"name": "Lateral Raise",    "type": "weighted"},
-    {"name": "Pull-Up",          "type": "bodyweight"},
-    {"name": "Push-Up",          "type": "bodyweight"},
-    {"name": "Dip",              "type": "bodyweight"},
-    {"name": "Chin-Up",          "type": "bodyweight"},
-    {"name": "Plank",            "type": "bodyweight"},
-    {"name": "Sit-Up",           "type": "bodyweight"},
-    {"name": "Burpee",           "type": "bodyweight"},
-    {"name": "Lunge",            "type": "bodyweight"},
-    {"name": "Running",          "type": "cardio"},
-    {"name": "Cycling",          "type": "cardio"},
-    {"name": "Rowing Machine",   "type": "cardio"},
-    {"name": "Jump Rope",        "type": "cardio"},
-    {"name": "Swimming",         "type": "cardio"},
-    {"name": "Elliptical",       "type": "cardio"},
-    {"name": "Stair Climber",    "type": "cardio"},
-]
-
-
-def search_exercises(q: str) -> list[dict]:
+async def search_exercises(db: AsyncSession, q: str) -> list[dict]:
     q = q.strip().lower()
+    stmt = select(ExerciseCatalog).order_by(ExerciseCatalog.name.asc())
     if not q:
-        return EXERCISE_LIBRARY[:10]
-    return [e for e in EXERCISE_LIBRARY if q in e["name"].lower()]
+        stmt = stmt.limit(12)
+    else:
+        stmt = stmt.where(func.lower(ExerciseCatalog.name).contains(q)).limit(20)
+    r = await db.execute(stmt)
+    rows = r.scalars().all()
+    return [
+        {
+            "name": row.name,
+            "type": row.exercise_type.value,
+            "muscle_group": row.muscle_group.value,
+        }
+        for row in rows
+    ]
 
 
 async def create_workout(db: AsyncSession, name: str | None, today: date) -> Workout:
@@ -60,13 +51,19 @@ async def get_workout(db: AsyncSession, workout_id: str) -> Workout | None:
 
 
 async def add_exercise(
-    db: AsyncSession, workout_id: str, name: str, exercise_type: ExerciseType, order: int
+    db: AsyncSession,
+    workout_id: str,
+    name: str,
+    exercise_type: ExerciseType,
+    muscle_group: MuscleGroup,
+    order: int,
 ) -> WorkoutExercise:
     ex = WorkoutExercise(
         id=str(uuid.uuid4()),
         workout_id=workout_id,
         name=name,
         exercise_type=exercise_type,
+        muscle_group=muscle_group,
         order=order,
     )
     db.add(ex)
@@ -119,3 +116,63 @@ async def get_recent_workouts(db: AsyncSession, limit: int = 5) -> list[Workout]
         .options(selectinload(Workout.exercises))
     )
     return r.scalars().all()
+
+
+async def get_daily_minutes_last_7(db: AsyncSession) -> list[int]:
+    from datetime import timedelta
+
+    today = date.today()
+    out: list[int] = []
+    for offset in range(6, -1, -1):
+        day = today - timedelta(days=offset)
+        r = await db.execute(
+            select(func.sum(WorkoutSet.duration_minutes))
+            .join(WorkoutExercise, WorkoutExercise.id == WorkoutSet.exercise_id)
+            .join(Workout, Workout.id == WorkoutExercise.workout_id)
+            .where(Workout.date == day, Workout.finished == True)
+        )
+        out.append(int(r.scalar() or 0))
+    return out
+
+
+async def get_weekly_total_minutes(db: AsyncSession) -> int:
+    from datetime import timedelta
+
+    since = date.today() - timedelta(days=6)
+    r = await db.execute(
+        select(func.sum(WorkoutSet.duration_minutes))
+        .join(WorkoutExercise, WorkoutExercise.id == WorkoutSet.exercise_id)
+        .join(Workout, Workout.id == WorkoutExercise.workout_id)
+        .where(Workout.date >= since, Workout.finished == True)
+    )
+    return int(r.scalar() or 0)
+
+
+async def get_streak_days(db: AsyncSession) -> int:
+    from datetime import timedelta
+
+    today = date.today()
+    r = await db.execute(select(Workout.date).where(Workout.finished == True))
+    days = {d for d in r.scalars().all()}
+    streak = 0
+    for offset in range(0, 365):
+        day = today - timedelta(days=offset)
+        if day in days:
+            streak += 1
+        else:
+            break
+    return streak
+
+
+async def get_muscle_distribution_last_7(db: AsyncSession) -> dict[str, int]:
+    from datetime import timedelta
+
+    since = date.today() - timedelta(days=6)
+    r = await db.execute(
+        select(WorkoutExercise.muscle_group, func.count(WorkoutSet.id))
+        .join(WorkoutSet, WorkoutSet.exercise_id == WorkoutExercise.id)
+        .join(Workout, Workout.id == WorkoutExercise.workout_id)
+        .where(Workout.date >= since, Workout.finished == True)
+        .group_by(WorkoutExercise.muscle_group)
+    )
+    return {row[0].value if row[0] else "other": int(row[1]) for row in r.all()}

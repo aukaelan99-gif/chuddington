@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from models import MealType, Intensity, ExerciseType
+from models import MealType, Intensity, ExerciseType, MuscleGroup
 
 
 class StudySessionCreate(BaseModel):
@@ -42,6 +42,7 @@ class DailyGoalsUpdate(BaseModel):
 class AddExerciseForm(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     exercise_type: ExerciseType
+    muscle_group: MuscleGroup = Field(default=MuscleGroup.other)
 
 
 class AddSetForm(BaseModel):
