@@ -63,6 +63,13 @@ async def add_exercise(
     muscle_group: MuscleGroup,
     order: int,
 ) -> WorkoutExercise:
+    existing = await db.execute(
+        select(WorkoutExercise).where(WorkoutExercise.workout_id == workout_id)
+    )
+    names = {row.name.strip().lower() for row in existing.scalars().all()}
+    if name.strip().lower() in names:
+        return None
+
     ex = WorkoutExercise(
         id=str(uuid.uuid4()),
         workout_id=workout_id,
@@ -192,6 +199,10 @@ async def finalize_workout_with_sets(
     await db.flush()
 
     total_sets = 0
+    # Keep workout duration within a sensible bound.
+    if workout_minutes is not None:
+        workout_minutes = max(0.0, min(float(workout_minutes), 600.0))
+
     for ex_data in sets_payload:
         ex_id = ex_data.get("exercise_id")
         ex = next((row for row in workout.exercises if row.id == ex_id), None)
@@ -200,13 +211,32 @@ async def finalize_workout_with_sets(
         for i, row in enumerate(ex_data.get("sets", []), start=1):
             reps = row.get("reps")
             weight_kg = row.get("weight_kg")
+
+            reps_val = None
+            if reps not in (None, ""):
+                try:
+                    reps_val = int(reps)
+                except (TypeError, ValueError):
+                    reps_val = None
+            if reps_val is not None and not (1 <= reps_val <= 200):
+                reps_val = None
+
+            weight_val = None
+            if weight_kg not in (None, ""):
+                try:
+                    weight_val = float(weight_kg)
+                except (TypeError, ValueError):
+                    weight_val = None
+            if weight_val is not None and not (0 <= weight_val <= 500):
+                weight_val = None
+
             db.add(
                 WorkoutSet(
                     id=str(uuid.uuid4()),
                     exercise_id=ex.id,
                     set_number=i,
-                    reps=int(reps) if reps not in (None, "") else None,
-                    weight_kg=float(weight_kg) if weight_kg not in (None, "") else None,
+                    reps=reps_val,
+                    weight_kg=weight_val,
                     duration_minutes=None,
                 )
             )

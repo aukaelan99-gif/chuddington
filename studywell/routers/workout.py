@@ -56,6 +56,8 @@ async def add_exercise(
     workout = await workout_service.get_workout(db, workout_id)
     order = len(workout.exercises) if workout else 0
     ex = await workout_service.add_exercise(db, workout_id, name, exercise_type, muscle_group, order)
+    if not ex:
+        return HTMLResponse(content="", status_code=204)
     return templates.TemplateResponse(
         request,
         "partials/workout_exercise_block.html",

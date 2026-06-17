@@ -4,13 +4,13 @@
 <tr class="border-b hover:bg-gray-50 text-sm" data-set-row="1">
   <td class="py-1.5 text-gray-500 align-middle" data-set-number>{{ s.set_number }}</td>
   <td class="py-1.5">
-    <input type="number" data-reps min="1" max="999" value="{{ s.reps if s.reps is not none else '' }}"
+    <input type="number" data-reps min="1" max="200" value="{{ s.reps if s.reps is not none else '' }}"
            placeholder="Reps"
            class="w-20 border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
   </td>
   {% if is_weighted or is_bodyweight %}
   <td class="py-1.5">
-    <input type="number" data-weight step="0.5" min="0" max="1000" value="{{ s.weight_kg if s.weight_kg is not none else '' }}"
+    <input type="number" data-weight step="0.5" min="0" max="500" value="{{ s.weight_kg if s.weight_kg is not none else '' }}"
            placeholder="{% if is_bodyweight %}Added weight{% else %}Weight{% endif %}"
            class="w-28 border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
   </td>

@@ -2,7 +2,7 @@
 {% set is_bodyweight = ex.exercise_type.value == "bodyweight" %}
 {% set is_cardio     = ex.exercise_type.value == "cardio" %}
 
-<div id="ex-block-{{ ex.id }}" data-exercise-block="1" data-exercise-id="{{ ex.id }}" data-exercise-type="{{ ex.exercise_type.value }}" class="bg-white rounded-xl shadow p-5">
+<div id="ex-block-{{ ex.id }}" data-exercise-block="1" data-exercise-id="{{ ex.id }}" data-exercise-name="{{ ex.name | lower }}" data-exercise-type="{{ ex.exercise_type.value }}" class="bg-white rounded-xl shadow p-5">
   <!-- Header -->
   <div class="flex items-center gap-3 mb-3">
     <span class="font-semibold text-base">{{ ex.name }}</span>
