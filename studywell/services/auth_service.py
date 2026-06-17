@@ -1,18 +1,16 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from passlib.context import CryptContext
+import bcrypt
 from models import User
 import uuid
 
-pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 def hash_password(password: str) -> str:
-    return pwd_ctx.hash(password)
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_ctx.verify(plain, hashed)
+    return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
 async def get_user_by_username(db: AsyncSession, username: str) -> User | None:
