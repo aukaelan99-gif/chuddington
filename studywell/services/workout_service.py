@@ -100,6 +100,69 @@ async def add_set(
     return s
 
 
+async def get_workout_exercise(db: AsyncSession, ex_id: str) -> WorkoutExercise | None:
+    r = await db.execute(
+        select(WorkoutExercise)
+        .where(WorkoutExercise.id == ex_id)
+        .options(selectinload(WorkoutExercise.sets))
+    )
+    return r.scalar_one_or_none()
+
+
+async def create_planned_set(db: AsyncSession, ex_id: str) -> WorkoutSet | None:
+    ex = await get_workout_exercise(db, ex_id)
+    if not ex:
+        return None
+    s = WorkoutSet(
+        id=str(uuid.uuid4()),
+        exercise_id=ex_id,
+        set_number=len(ex.sets) + 1,
+        reps=None,
+        weight_kg=None,
+        duration_minutes=None,
+    )
+    db.add(s)
+    await db.commit()
+    await db.refresh(s)
+    return s
+
+
+async def update_set(
+    db: AsyncSession,
+    set_id: str,
+    reps: int | None,
+    weight_kg: float | None,
+    duration_minutes: float | None,
+) -> WorkoutSet | None:
+    s = await db.get(WorkoutSet, set_id)
+    if not s:
+        return None
+    s.reps = reps
+    s.weight_kg = weight_kg
+    s.duration_minutes = duration_minutes
+    await db.commit()
+    await db.refresh(s)
+    return s
+
+
+async def delete_set(db: AsyncSession, ex_id: str, set_id: str) -> WorkoutExercise | None:
+    s = await db.get(WorkoutSet, set_id)
+    if not s:
+        return await get_workout_exercise(db, ex_id)
+    await db.delete(s)
+    await db.commit()
+
+    ex = await get_workout_exercise(db, ex_id)
+    if not ex:
+        return None
+
+    # Keep set numbers contiguous after deletion.
+    for idx, row in enumerate(ex.sets, start=1):
+        row.set_number = idx
+    await db.commit()
+    return await get_workout_exercise(db, ex_id)
+
+
 async def finish_workout(db: AsyncSession, workout_id: str) -> None:
     w = await db.get(Workout, workout_id)
     if w:

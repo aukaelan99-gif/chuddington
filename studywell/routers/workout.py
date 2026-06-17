@@ -57,31 +57,55 @@ async def add_exercise(
     )
 
 
-@router.post("/{workout_id}/exercise/{ex_id}/add-set", response_class=HTMLResponse)
-async def add_set(
+@router.post("/{workout_id}/exercise/{ex_id}/plan-set", response_class=HTMLResponse)
+async def plan_set(
     request: Request,
     workout_id: str,
     ex_id: str,
+    db: AsyncSession = Depends(get_session),
+):
+    ex = await workout_service.get_workout_exercise(db, ex_id)
+    s = await workout_service.create_planned_set(db, ex_id)
+    return templates.TemplateResponse(
+        request,
+        "partials/workout_set_row.html",
+        {"s": s, "ex": ex},
+    )
+
+
+@router.post("/{workout_id}/exercise/{ex_id}/set/{set_id}/save", response_class=HTMLResponse)
+async def save_set(
+    request: Request,
+    workout_id: str,
+    ex_id: str,
+    set_id: str,
     reps: int = Form(None),
     weight_kg: float = Form(None),
     duration_minutes: float = Form(None),
     db: AsyncSession = Depends(get_session),
 ):
-    from sqlalchemy import select
-    from sqlalchemy.orm import selectinload
-    from models import WorkoutExercise
-    r = await db.execute(
-        select(WorkoutExercise)
-        .where(WorkoutExercise.id == ex_id)
-        .options(selectinload(WorkoutExercise.sets))
-    )
-    ex = r.scalar_one_or_none()
-    set_number = len(ex.sets) + 1 if ex else 1
-    s = await workout_service.add_set(db, ex_id, set_number, reps, weight_kg, duration_minutes)
+    s = await workout_service.update_set(db, set_id, reps, weight_kg, duration_minutes)
+    ex = await workout_service.get_workout_exercise(db, ex_id)
     return templates.TemplateResponse(
         request,
         "partials/workout_set_row.html",
         {"s": s, "ex": ex},
+    )
+
+
+@router.post("/{workout_id}/exercise/{ex_id}/set/{set_id}/delete", response_class=HTMLResponse)
+async def remove_set(
+    request: Request,
+    workout_id: str,
+    ex_id: str,
+    set_id: str,
+    db: AsyncSession = Depends(get_session),
+):
+    ex = await workout_service.delete_set(db, ex_id, set_id)
+    return templates.TemplateResponse(
+        request,
+        "partials/workout_set_rows.html",
+        {"ex": ex, "workout_id": workout_id},
     )
 
 

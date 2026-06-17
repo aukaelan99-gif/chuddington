@@ -5,3 +5,6 @@
   <span class="text-xs text-gray-400">{{ r.type }} · {{ r.muscle_group|replace('_', ' ') }}</span>
 </li>
 {% endfor %}
+{% if results|length == 0 %}
+<li class="px-3 py-2 text-sm text-gray-400">No exercises found.</li>
+{% endif %}

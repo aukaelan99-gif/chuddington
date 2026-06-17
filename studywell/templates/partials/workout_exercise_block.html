@@ -34,51 +34,14 @@
     </tbody>
   </table>
 
-  <!-- Add set form -->
-  <form hx-post="/workout/{{ workout_id }}/exercise/{{ ex.id }}/add-set"
+  <!-- Plan set button -->
+  <form hx-post="/workout/{{ workout_id }}/exercise/{{ ex.id }}/plan-set"
         hx-target="#sets-{{ ex.id }}"
         hx-swap="beforeend"
-        hx-on::after-request="this.reset()"
-        class="flex flex-wrap gap-2 items-end border-t pt-3">
-
-    {% if not is_cardio %}
-    <div class="flex flex-col gap-0.5">
-      <label class="text-xs text-gray-500">Reps</label>
-      <input type="number" name="reps" min="1" max="999"
-             {% if not is_cardio %}required{% endif %}
-             class="w-20 border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
-    </div>
-    {% endif %}
-
-    {% if is_weighted %}
-    <div class="flex flex-col gap-0.5" id="weight-field-{{ ex.id }}">
-      <label class="text-xs text-gray-500">Weight (kg)</label>
-      <input type="number" name="weight_kg" id="weight-input-{{ ex.id }}" step="0.5" min="0" max="1000"
-             class="w-24 border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
-    </div>
-    <label class="flex items-center gap-1 text-xs text-gray-500 cursor-pointer self-end pb-2">
-      <input type="checkbox" onchange="
-        var inp = document.getElementById('weight-input-{{ ex.id }}');
-        inp.disabled = this.checked;
-        inp.value = this.checked ? '0' : '';
-        inp.closest('div').style.opacity = this.checked ? '0.4' : '1';
-      " />
-      Bodyweight
-    </label>
-    {% endif %}
-
-    <div class="flex flex-col gap-0.5">
-      <label class="text-xs text-gray-500">
-        Duration (min){% if not is_cardio %} <span class="text-gray-300">optional</span>{% endif %}
-      </label>
-      <input type="number" name="duration_minutes" step="0.5" min="0" max="600"
-             {% if is_cardio %}required{% endif %}
-             class="w-24 border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
-    </div>
-
+        class="border-t pt-3">
     <button type="submit"
-            class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium self-end">
-      + Set
+            class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">
+      + Add Planned Set
     </button>
   </form>
 </div>
