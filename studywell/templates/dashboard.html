@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — StudyWell{% endblock %}
+{% block content %}
+<div class="mb-6 flex items-center justify-between">
+  <h1 class="text-2xl font-bold">Dashboard</h1>
+  <span class="text-sm text-gray-500">{{ today.strftime("%A, %B %-d") }}</span>
+</div>
+
+<!-- Wellbeing score -->
+<div class="mb-6 bg-white rounded-xl shadow p-4 flex items-center gap-4">
+  <div class="text-4xl font-extrabold
+    {% if score >= 70 %}text-green-500{% elif score >= 40 %}text-yellow-500{% else %}text-red-500{% endif %}">
+    {{ score }}
+  </div>
+  <div>
+    <div class="font-semibold text-lg">Wellbeing Score</div>
+    <div class="text-sm text-gray-500">Study 40% · Exercise 35% · Diet 25%</div>
+  </div>
+</div>
+
+<!-- Summary cards -->
+<div class="grid grid-cols-2 gap-4 mb-6">
+
+  <!-- Study -->
+  <div class="bg-white rounded-xl shadow p-4">
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Study Today</div>
+    <div class="text-2xl font-bold text-indigo-600">{{ study_hours }}h</div>
+    <div class="text-sm text-gray-400">Goal: {{ study_goal_hours }}h</div>
+    <div class="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div class="h-2 bg-indigo-500 rounded-full progress-bar" style="width: {{ study_pct }}%"></div>
+    </div>
+    <div class="text-xs text-right text-gray-400 mt-0.5">{{ study_pct }}%</div>
+  </div>
+
+  <!-- Exercise -->
+  <div class="bg-white rounded-xl shadow p-4">
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Exercise Today</div>
+    <div class="text-2xl font-bold text-green-600">{{ exercise_mins }}m</div>
+    <div class="text-sm text-gray-400">Goal: {{ exercise_goal }}m</div>
+    <div class="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div class="h-2 bg-green-500 rounded-full progress-bar" style="width: {{ exercise_pct }}%"></div>
+    </div>
+    <div class="text-xs text-right text-gray-400 mt-0.5">{{ exercise_pct }}%</div>
+  </div>
+
+  <!-- Calories -->
+  <div class="bg-white rounded-xl shadow p-4">
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Calories Today</div>
+    <div class="text-2xl font-bold text-orange-500">{{ calories }}</div>
+    <div class="text-sm text-gray-400">Target: {{ calorie_target }}</div>
+    <div class="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div class="h-2 bg-orange-400 rounded-full progress-bar" style="width: {{ calorie_pct }}%"></div>
+    </div>
+    <div class="text-xs text-right text-gray-400 mt-0.5">{{ calorie_pct }}%</div>
+  </div>
+
+  <!-- Water -->
+  <div class="bg-white rounded-xl shadow p-4">
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Water Today</div>
+    <div class="text-2xl font-bold text-blue-500">{{ water }} 🥤</div>
+    <div class="text-sm text-gray-400">Goal: {{ water_goal }} glasses</div>
+    <div class="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div class="h-2 bg-blue-400 rounded-full progress-bar" style="width: {{ water_pct }}%"></div>
+    </div>
+    <div class="text-xs text-right text-gray-400 mt-0.5">{{ water_pct }}%</div>
+  </div>
+</div>
+
+<!-- Quick add links -->
+<div class="bg-white rounded-xl shadow p-4">
+  <div class="font-semibold mb-3">Quick Add</div>
+  <div class="flex flex-wrap gap-3">
+    <a href="/study"    class="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 text-sm font-medium">+ Study Session</a>
+    <a href="/exercise" class="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 text-sm font-medium">+ Exercise</a>
+    <a href="/diet"     class="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 text-sm font-medium">+ Meal</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}StudyWell{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+
+  <!-- Desktop sidebar -->
+  <aside class="hidden md:flex fixed inset-y-0 left-0 w-56 bg-indigo-700 text-white flex-col py-6 px-4 z-10">
+    <div class="text-2xl font-bold mb-8">📚 StudyWell</div>
+    <nav class="flex flex-col gap-2 flex-1">
+      <a href="/"         class="nav-link">🏠 Dashboard</a>
+      <a href="/study"    class="nav-link">📖 Study</a>
+      <a href="/exercise" class="nav-link">🏃 Exercise</a>
+      <a href="/diet"     class="nav-link">🥗 Diet</a>
+      <a href="/insights" class="nav-link">📊 Insights</a>
+      <a href="/settings" class="nav-link mt-auto">⚙️ Settings</a>
+    </nav>
+  </aside>
+
+  <!-- Mobile bottom nav -->
+  <nav class="md:hidden fixed bottom-0 inset-x-0 bg-indigo-700 text-white flex justify-around py-2 z-10 text-xs">
+    <a href="/"         class="flex flex-col items-center gap-0.5">🏠<span>Home</span></a>
+    <a href="/study"    class="flex flex-col items-center gap-0.5">📖<span>Study</span></a>
+    <a href="/exercise" class="flex flex-col items-center gap-0.5">🏃<span>Exercise</span></a>
+    <a href="/diet"     class="flex flex-col items-center gap-0.5">🥗<span>Diet</span></a>
+    <a href="/insights" class="flex flex-col items-center gap-0.5">📊<span>Insights</span></a>
+  </nav>
+
+  <!-- Main content -->
+  <main class="md:ml-56 pb-20 md:pb-6 px-4 py-6 max-w-4xl">
+    {% block content %}{% endblock %}
+  </main>
+
+  <style>
+    .nav-link {
+      display: block;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.375rem;
+      transition: background 0.15s;
+    }
+    .nav-link:hover { background: rgba(255,255,255,0.15); }
+    .progress-bar { transition: width 0.4s ease; }
+  </style>
+</body>
+</html>

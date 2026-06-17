@@ -1,0 +1,12 @@
+<tr class="border-b hover:bg-gray-50">
+  <td class="py-2 font-medium">{{ entry.activity }}</td>
+  <td class="py-2 text-gray-600">{{ entry.duration_minutes }} min</td>
+  <td class="py-2">
+    <span class="px-2 py-0.5 rounded-full text-xs font-medium
+      {% if entry.intensity.value == 'high' %}bg-red-100 text-red-700
+      {% elif entry.intensity.value == 'medium' %}bg-yellow-100 text-yellow-700
+      {% else %}bg-green-100 text-green-700{% endif %}">
+      {{ entry.intensity.value | capitalize }}
+    </span>
+  </td>
+</tr>

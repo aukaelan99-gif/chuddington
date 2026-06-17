@@ -1,0 +1,10 @@
+<tr class="border-b hover:bg-gray-50">
+  <td class="py-2 font-medium">{{ meal.name }}</td>
+  <td class="py-2 text-gray-500 text-xs capitalize">{{ meal.meal_type.value }}</td>
+  <td class="py-2 text-gray-600">{{ meal.calories }} kcal</td>
+  <td class="py-2 text-gray-400 text-xs">
+    {{ meal.protein_g or "—" }}g /
+    {{ meal.carbs_g or "—" }}g /
+    {{ meal.fat_g or "—" }}g
+  </td>
+</tr>

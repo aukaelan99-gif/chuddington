@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Study — StudyWell{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Study Tracker</h1>
+
+<!-- Pomodoro Timer -->
+<div class="bg-white rounded-xl shadow p-6 mb-6 text-center">
+  <div class="text-xs text-gray-500 uppercase tracking-wide mb-2">Pomodoro Timer</div>
+  <div id="pomodoro-display" class="text-6xl font-mono font-bold text-indigo-600 mb-4">25:00</div>
+  <div id="pomodoro-label" class="text-sm text-gray-500 mb-4">Focus session</div>
+  <div class="flex justify-center gap-3">
+    <button id="pomodoro-btn"   class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Start</button>
+    <button id="pomodoro-reset" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium">Reset</button>
+  </div>
+</div>
+
+<!-- Log form -->
+<div class="bg-white rounded-xl shadow p-6 mb-6">
+  <div class="font-semibold mb-4">Log a Study Session</div>
+  <form id="study-form"
+        hx-post="/study/add"
+        hx-target="#session-list"
+        hx-swap="afterbegin"
+        class="flex flex-col gap-3">
+    <input type="hidden" id="pomodoro-duration" name="duration_minutes" value="25" />
+    <div class="flex gap-3">
+      <input type="text" name="subject" placeholder="Subject" required maxlength="50"
+             class="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+      <input type="number" name="duration_minutes" id="manual-duration" placeholder="Mins" min="1" max="720" required
+             class="w-24 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+    </div>
+    <input type="text" name="notes" placeholder="Notes (optional)" maxlength="500"
+           class="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+    <button type="submit"
+            class="self-end px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">
+      Add Session
+    </button>
+  </form>
+</div>
+
+<!-- Today's sessions -->
+<div class="bg-white rounded-xl shadow p-6 mb-6">
+  <div class="font-semibold mb-3">Today's Sessions</div>
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left text-gray-400 border-b">
+        <th class="pb-2">Subject</th>
+        <th class="pb-2">Duration</th>
+        <th class="pb-2">Notes</th>
+      </tr>
+    </thead>
+    <tbody id="session-list">
+      {% for session in sessions %}
+        {% include "partials/study_row.html" %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Weekly chart -->
+<div class="bg-white rounded-xl shadow p-6">
+  <div class="font-semibold mb-4">Study Hours — Last 7 Days</div>
+  <canvas id="studyChart" height="120"></canvas>
+</div>
+
+<script>
+// ── Pomodoro Timer ──────────────────────────────────────────────
+(function () {
+  let timer, mins = 25, secs = 0, focus = true, running = false;
+  const display = document.getElementById('pomodoro-display');
+  const label   = document.getElementById('pomodoro-label');
+  const btn     = document.getElementById('pomodoro-btn');
+  const reset   = document.getElementById('pomodoro-reset');
+
+  function render() {
+    display.textContent = String(mins).padStart(2,'0') + ':' + String(secs).padStart(2,'0');
+    label.textContent   = focus ? 'Focus session' : 'Break';
+    display.className   = 'text-6xl font-mono font-bold mb-4 ' + (focus ? 'text-indigo-600' : 'text-green-500');
+  }
+
+  function tick() {
+    if (secs === 0) {
+      if (mins === 0) {
+        clearInterval(timer); running = false; btn.textContent = 'Start';
+        if (focus) {
+          document.getElementById('pomodoro-duration').value = 25;
+          document.getElementById('study-form').requestSubmit();
+        }
+        focus = !focus; mins = focus ? 25 : 5; render(); return;
+      }
+      mins--; secs = 59;
+    } else { secs--; }
+    render();
+  }
+
+  btn.addEventListener('click', () => {
+    if (running) { clearInterval(timer); btn.textContent = 'Resume'; }
+    else         { timer = setInterval(tick, 1000); btn.textContent = 'Pause'; }
+    running = !running;
+  });
+
+  reset.addEventListener('click', () => {
+    clearInterval(timer); running = false; focus = true;
+    mins = 25; secs = 0; btn.textContent = 'Start'; render();
+  });
+
+  render();
+})();
+
+// ── Study Chart ─────────────────────────────────────────────────
+new Chart(document.getElementById('studyChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ labels | tojson }},
+    datasets: [{
+      label: 'Study Hours',
+      data: {{ weekly_hours | tojson }},
+      backgroundColor: 'rgba(99,102,241,0.7)',
+      borderRadius: 4,
+    }]
+  },
+  options: { responsive: true, scales: { y: { beginAtZero: true, title: { display: true, text: 'Hours' } } } }
+});
+</script>
+{% endblock %}

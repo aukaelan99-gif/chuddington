@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Diet — StudyWell{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Diet Tracker</h1>
+
+<!-- Calorie progress -->
+<div class="bg-white rounded-xl shadow p-4 mb-6">
+  <div class="flex justify-between text-sm mb-1">
+    <span class="font-medium">Calories Today</span>
+    <span class="text-gray-500">{{ macros.calories }} / {{ calorie_target }} kcal</span>
+  </div>
+  <div class="h-3 bg-gray-100 rounded-full overflow-hidden">
+    <div class="h-3 bg-orange-400 rounded-full progress-bar" style="width: {{ calorie_pct }}%"></div>
+  </div>
+  <!-- Macro totals -->
+  <div class="flex gap-6 mt-3 text-sm text-gray-600">
+    <span>🥩 Protein: <strong>{{ macros.protein }}g</strong></span>
+    <span>🍞 Carbs: <strong>{{ macros.carbs }}g</strong></span>
+    <span>🧈 Fat: <strong>{{ macros.fat }}g</strong></span>
+  </div>
+</div>
+
+<!-- Water counter -->
+{% include "partials/water_widget.html" %}
+
+<!-- Add meal form -->
+<div class="bg-white rounded-xl shadow p-6 mb-6">
+  <div class="font-semibold mb-4">Log a Meal</div>
+  <form hx-post="/diet/add"
+        hx-target="#meal-list"
+        hx-swap="afterbegin"
+        class="flex flex-col gap-3">
+    <div class="flex gap-3">
+      <input type="text" name="name" placeholder="Food name" required maxlength="100"
+             class="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+      <select name="meal_type" required
+              class="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
+        {% for t in meal_types %}
+          <option value="{{ t }}">{{ t | capitalize }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="flex gap-3">
+      <input type="number" name="calories" placeholder="Calories" min="0" max="5000" required
+             class="w-28 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+      <input type="number" name="protein_g" placeholder="Protein g" step="0.1" min="0"
+             class="w-28 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+      <input type="number" name="carbs_g" placeholder="Carbs g" step="0.1" min="0"
+             class="w-28 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+      <input type="number" name="fat_g" placeholder="Fat g" step="0.1" min="0"
+             class="w-28 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+    </div>
+    <button type="submit"
+            class="self-end px-5 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-medium">
+      Add Meal
+    </button>
+  </form>
+</div>
+
+<!-- Meals by type -->
+<div class="bg-white rounded-xl shadow p-6 mb-6">
+  <div class="font-semibold mb-3">Today's Meals</div>
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left text-gray-400 border-b">
+        <th class="pb-2">Name</th>
+        <th class="pb-2">Type</th>
+        <th class="pb-2">Calories</th>
+        <th class="pb-2">P/C/F (g)</th>
+      </tr>
+    </thead>
+    <tbody id="meal-list">
+      {% for meal in meals %}
+        {% include "partials/meal_row.html" %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Macro pie chart -->
+{% if total_macros > 0 %}
+<div class="bg-white rounded-xl shadow p-6">
+  <div class="font-semibold mb-4">Macro Distribution</div>
+  <div class="max-w-xs mx-auto">
+    <canvas id="macroChart"></canvas>
+  </div>
+</div>
+<script>
+new Chart(document.getElementById('macroChart'), {
+  type: 'pie',
+  data: {
+    labels: ['Protein', 'Carbs', 'Fat'],
+    datasets: [{
+      data: [{{ macros.protein }}, {{ macros.carbs }}, {{ macros.fat }}],
+      backgroundColor: ['rgba(99,102,241,0.8)', 'rgba(251,146,60,0.8)', 'rgba(250,204,21,0.8)'],
+    }]
+  },
+  options: { responsive: true }
+});
+</script>
+{% endif %}
+{% endblock %}

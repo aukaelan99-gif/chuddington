@@ -1,0 +1,31 @@
+<!-- daily_summary partial — re-fetch after any log to refresh dashboard cards -->
+<div id="daily-summary" class="grid grid-cols-2 gap-4">
+  <div class="bg-white rounded-xl shadow p-4">
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Study Today</div>
+    <div class="text-2xl font-bold text-indigo-600">{{ study_hours }}h</div>
+    <div class="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div class="h-2 bg-indigo-500 rounded-full progress-bar" style="width: {{ study_pct }}%"></div>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl shadow p-4">
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Exercise Today</div>
+    <div class="text-2xl font-bold text-green-600">{{ exercise_mins }}m</div>
+    <div class="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div class="h-2 bg-green-500 rounded-full progress-bar" style="width: {{ exercise_pct }}%"></div>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl shadow p-4">
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Calories Today</div>
+    <div class="text-2xl font-bold text-orange-500">{{ calories }}</div>
+    <div class="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div class="h-2 bg-orange-400 rounded-full progress-bar" style="width: {{ calorie_pct }}%"></div>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl shadow p-4">
+    <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">Water Today</div>
+    <div class="text-2xl font-bold text-blue-500">{{ water }} 🥤</div>
+    <div class="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div class="h-2 bg-blue-400 rounded-full progress-bar" style="width: {{ water_pct }}%"></div>
+    </div>
+  </div>
+</div>

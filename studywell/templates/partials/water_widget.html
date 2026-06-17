@@ -1,0 +1,16 @@
+<div id="water-widget" class="bg-white rounded-xl shadow p-4 mb-6 flex items-center gap-4">
+  <div class="text-2xl font-bold text-blue-500">{{ water }} 🥤</div>
+  <div class="text-sm text-gray-500">/ {{ water_goal }} glasses</div>
+  <div class="flex gap-2 ml-auto">
+    <form hx-post="/diet/water" hx-target="#water-widget" hx-swap="outerHTML">
+      <input type="hidden" name="glasses" value="{% if water > 0 %}{{ water - 1 }}{% else %}0{% endif %}" />
+      <button type="submit"
+              class="w-8 h-8 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 font-bold text-lg leading-none">−</button>
+    </form>
+    <form hx-post="/diet/water" hx-target="#water-widget" hx-swap="outerHTML">
+      <input type="hidden" name="glasses" value="{{ water + 1 }}" />
+      <button type="submit"
+              class="w-8 h-8 rounded-full bg-blue-500 text-white hover:bg-blue-600 font-bold text-lg leading-none">+</button>
+    </form>
+  </div>
+</div>

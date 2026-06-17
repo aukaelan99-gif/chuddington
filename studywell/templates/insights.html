@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Insights — StudyWell{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Insights</h1>
+
+<!-- Wellbeing score -->
+<div class="bg-white rounded-xl shadow p-4 mb-6 flex items-center gap-4">
+  <div class="text-5xl font-extrabold
+    {% if score >= 70 %}text-green-500{% elif score >= 40 %}text-yellow-500{% else %}text-red-500{% endif %}">
+    {{ score }}
+  </div>
+  <div>
+    <div class="font-semibold text-lg">Today's Wellbeing Score</div>
+    <div class="text-sm text-gray-500">Composite: Study 40% · Exercise 35% · Diet 25%</div>
+  </div>
+  <div class="ml-auto">
+    <a href="/insights/export"
+       class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">
+      Download JSON
+    </a>
+  </div>
+</div>
+
+<!-- Study hours chart -->
+<div class="bg-white rounded-xl shadow p-6 mb-6">
+  <div class="font-semibold mb-4">Study Hours — Last 7 Days</div>
+  <canvas id="studyChart" height="100"></canvas>
+</div>
+
+<!-- Exercise minutes chart -->
+<div class="bg-white rounded-xl shadow p-6 mb-6">
+  <div class="font-semibold mb-4">Exercise Minutes — Last 7 Days</div>
+  <canvas id="exerciseChart" height="100"></canvas>
+</div>
+
+<!-- Calories chart -->
+<div class="bg-white rounded-xl shadow p-6">
+  <div class="font-semibold mb-4">Calories — Last 7 Days</div>
+  <canvas id="calChart" height="100"></canvas>
+</div>
+
+<script>
+const labels = {{ chart_data.labels | tojson }};
+
+new Chart(document.getElementById('studyChart'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [{ label: 'Study Hours', data: {{ chart_data.study_hours | tojson }},
+      backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 4 }]
+  },
+  options: { responsive: true, scales: { y: { beginAtZero: true } } }
+});
+
+new Chart(document.getElementById('exerciseChart'), {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [{ label: 'Exercise Mins', data: {{ chart_data.exercise_mins | tojson }},
+      borderColor: 'rgb(34,197,94)', backgroundColor: 'rgba(34,197,94,0.15)', tension: 0.3, fill: true }]
+  },
+  options: { responsive: true, scales: { y: { beginAtZero: true } } }
+});
+
+new Chart(document.getElementById('calChart'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [{ label: 'Calories', data: {{ chart_data.calories | tojson }},
+      backgroundColor: 'rgba(251,146,60,0.7)', borderRadius: 4 }]
+  },
+  options: { responsive: true, scales: { y: { beginAtZero: true } } }
+});
+</script>
+{% endblock %}
