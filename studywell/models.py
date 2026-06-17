@@ -1,11 +1,19 @@
 import uuid, enum
-from datetime import date
-from sqlalchemy import String, Integer, Float, Date, Boolean, Enum as SAEnum, ForeignKey
+from datetime import date, datetime
+from sqlalchemy import String, Integer, Float, Date, Boolean, DateTime, Enum as SAEnum, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
     pass
+
+
+class User(Base):
+    __tablename__ = "users"
+    id:            Mapped[str]      = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    username:      Mapped[str]      = mapped_column(String(50), unique=True, nullable=False)
+    password_hash: Mapped[str]      = mapped_column(String(200), nullable=False)
+    created_at:    Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class MealType(str, enum.Enum):
@@ -24,6 +32,7 @@ class Intensity(str, enum.Enum):
 class StudySession(Base):
     __tablename__ = "study_sessions"
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
     subject: Mapped[str] = mapped_column(String(50))
     duration_minutes: Mapped[int] = mapped_column(Integer)
     date: Mapped[date] = mapped_column(Date)
@@ -33,6 +42,7 @@ class StudySession(Base):
 class ExerciseEntry(Base):
     __tablename__ = "exercise_entries"
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
     activity: Mapped[str] = mapped_column(String(100))
     duration_minutes: Mapped[int] = mapped_column(Integer)
     intensity: Mapped[Intensity] = mapped_column(SAEnum(Intensity))
@@ -42,6 +52,7 @@ class ExerciseEntry(Base):
 class MealEntry(Base):
     __tablename__ = "meal_entries"
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(100))
     meal_type: Mapped[MealType] = mapped_column(SAEnum(MealType))
     calories: Mapped[int] = mapped_column(Integer)
@@ -54,13 +65,15 @@ class MealEntry(Base):
 class WaterLog(Base):
     __tablename__ = "water_logs"
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
     glasses: Mapped[int] = mapped_column(Integer)
-    date: Mapped[date] = mapped_column(Date, unique=True)
+    date: Mapped[date] = mapped_column(Date)
 
 
 class DailyGoals(Base):
     __tablename__ = "daily_goals"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, unique=True, index=True)
     study_minutes: Mapped[int] = mapped_column(Integer, default=120)
     calorie_target: Mapped[int] = mapped_column(Integer, default=2000)
     exercise_minutes: Mapped[int] = mapped_column(Integer, default=30)
@@ -101,6 +114,7 @@ class ExerciseCatalog(Base):
 class Workout(Base):
     __tablename__ = "workouts"
     id:       Mapped[str]      = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id:  Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
     name:     Mapped[str | None] = mapped_column(String(100), nullable=True)
     date:     Mapped[date]     = mapped_column(Date)
     duration_minutes: Mapped[float | None] = mapped_column(Float, nullable=True)

@@ -11,6 +11,7 @@ AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 async def init_db() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # legacy column migrations
         cols = await conn.execute(text("PRAGMA table_info(workout_exercises)"))
         names = {row[1] for row in cols.fetchall()}
         if "muscle_group" not in names:
@@ -22,6 +23,42 @@ async def init_db() -> None:
         workout_names = {row[1] for row in workout_cols.fetchall()}
         if "duration_minutes" not in workout_names:
             await conn.execute(text("ALTER TABLE workouts ADD COLUMN duration_minutes REAL"))
+
+        # user_id migrations for all data tables
+        for table, col_type in [
+            ("study_sessions", "VARCHAR"),
+            ("exercise_entries", "VARCHAR"),
+            ("meal_entries", "VARCHAR"),
+            ("water_logs", "VARCHAR"),
+            ("workouts", "VARCHAR"),
+            ("daily_goals", "VARCHAR"),
+        ]:
+            t_cols = await conn.execute(text(f"PRAGMA table_info({table})"))
+            t_names = {row[1] for row in t_cols.fetchall()}
+            if "user_id" not in t_names:
+                await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN user_id {col_type}"))
+
+        # daily_goals: migrate from integer id=1 singleton — if id column is INTEGER type, recreate as VARCHAR
+        dg_info = await conn.execute(text("PRAGMA table_info(daily_goals)"))
+        dg_cols = {row[1]: row[2] for row in dg_info.fetchall()}
+        if dg_cols.get("id", "").upper().startswith("INT"):
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS daily_goals_new (
+                    id VARCHAR PRIMARY KEY,
+                    user_id VARCHAR,
+                    study_minutes INTEGER DEFAULT 120,
+                    calorie_target INTEGER DEFAULT 2000,
+                    exercise_minutes INTEGER DEFAULT 30,
+                    water_glasses INTEGER DEFAULT 8
+                )
+            """))
+            await conn.execute(text("""
+                INSERT OR IGNORE INTO daily_goals_new (id, user_id, study_minutes, calorie_target, exercise_minutes, water_glasses)
+                SELECT CAST(id AS VARCHAR), user_id, study_minutes, calorie_target, exercise_minutes, water_glasses
+                FROM daily_goals
+            """))
+            await conn.execute(text("DROP TABLE daily_goals"))
+            await conn.execute(text("ALTER TABLE daily_goals_new RENAME TO daily_goals"))
 
     await seed_exercise_catalog()
 

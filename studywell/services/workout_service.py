@@ -36,8 +36,8 @@ async def search_exercises(db: AsyncSession, q: str, muscle_group: str = "all") 
     return results
 
 
-async def create_workout(db: AsyncSession, name: str | None, today: date) -> Workout:
-    w = Workout(id=str(uuid.uuid4()), name=name or None, date=today, finished=False)
+async def create_workout(db: AsyncSession, name: str | None, today: date, user_id: str | None = None) -> Workout:
+    w = Workout(id=str(uuid.uuid4()), user_id=user_id, name=name or None, date=today, finished=False)
     db.add(w)
     await db.commit()
     await db.refresh(w)
@@ -262,10 +262,10 @@ async def get_recent_workouts(db: AsyncSession, limit: int = 5) -> list[Workout]
     return r.scalars().all()
 
 
-async def get_workout_history(db: AsyncSession) -> list[Workout]:
+async def get_workout_history(db: AsyncSession, user_id: str) -> list[Workout]:
     r = await db.execute(
         select(Workout)
-        .where(Workout.finished == True)
+        .where(Workout.finished == True, Workout.user_id == user_id)
         .order_by(Workout.date.desc(), Workout.id.desc())
         .options(selectinload(Workout.exercises).selectinload(WorkoutExercise.sets))
     )
@@ -289,7 +289,7 @@ async def get_daily_minutes_last_7(db: AsyncSession) -> list[int]:
     return out
 
 
-async def get_weekly_total_minutes(db: AsyncSession) -> int:
+async def get_weekly_total_minutes(db: AsyncSession, user_id: str) -> int:
     from datetime import timedelta
 
     since = date.today() - timedelta(days=6)
@@ -297,16 +297,19 @@ async def get_weekly_total_minutes(db: AsyncSession) -> int:
         select(func.sum(Workout.duration_minutes)).where(
             Workout.date >= since,
             Workout.finished == True,
+            Workout.user_id == user_id,
         )
     )
     return int(r.scalar() or 0)
 
 
-async def get_streak_days(db: AsyncSession) -> int:
+async def get_streak_days(db: AsyncSession, user_id: str) -> int:
     from datetime import timedelta
 
     today = date.today()
-    r = await db.execute(select(Workout.date).where(Workout.finished == True))
+    r = await db.execute(
+        select(Workout.date).where(Workout.finished == True, Workout.user_id == user_id)
+    )
     days = {d for d in r.scalars().all()}
     streak = 0
     for offset in range(0, 365):
@@ -318,7 +321,7 @@ async def get_streak_days(db: AsyncSession) -> int:
     return streak
 
 
-async def get_muscle_distribution_last_7(db: AsyncSession) -> dict[str, int]:
+async def get_muscle_distribution_last_7(db: AsyncSession, user_id: str) -> dict[str, int]:
     from datetime import timedelta
 
     since = date.today() - timedelta(days=6)
@@ -326,7 +329,7 @@ async def get_muscle_distribution_last_7(db: AsyncSession) -> dict[str, int]:
         select(WorkoutExercise.muscle_group, func.count(WorkoutSet.id))
         .join(WorkoutSet, WorkoutSet.exercise_id == WorkoutExercise.id)
         .join(Workout, Workout.id == WorkoutExercise.workout_id)
-        .where(Workout.date >= since, Workout.finished == True)
+        .where(Workout.date >= since, Workout.finished == True, Workout.user_id == user_id)
         .group_by(WorkoutExercise.muscle_group)
     )
     return {row[0].value if row[0] else "other": int(row[1]) for row in r.all()}

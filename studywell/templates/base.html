@@ -21,6 +21,12 @@
       <a href="/insights" class="nav-link">📊 Insights</a>
       <a href="/settings" class="nav-link mt-auto">⚙️ Settings</a>
     </nav>
+    <div class="mt-4 border-t border-indigo-600 pt-4 text-xs text-indigo-200 flex items-center justify-between gap-2">
+      <span class="truncate">👤 {{ username if username is defined else "" }}</span>
+      <form action="/logout" method="post" class="shrink-0">
+        <button type="submit" class="text-indigo-200 hover:text-white text-xs font-medium whitespace-nowrap">Sign out</button>
+      </form>
+    </div>
   </aside>
 
   <!-- Mobile bottom nav -->
