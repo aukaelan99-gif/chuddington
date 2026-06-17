@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Workout Detail — StudyWell{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold">{{ workout.name if workout.name else "Workout Session" }}</h1>
+    <div class="text-sm text-gray-500">{{ workout.date.strftime("%Y-%m-%d") }} · {{ workout.duration_minutes if workout.duration_minutes is not none else 0 }} min</div>
+  </div>
+  <a href="/workout/history" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">Back to History</a>
+</div>
+
+<div class="grid gap-4">
+  {% for ex in workout.exercises %}
+  <div class="bg-white rounded-xl shadow p-5">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="font-semibold">{{ ex.name }}</span>
+      <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">{{ ex.exercise_type.value | capitalize }}</span>
+      <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">{{ ex.muscle_group.value | replace('_', ' ') | title }}</span>
+    </div>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-gray-400 border-b text-xs uppercase">
+          <th class="pb-1">Set</th>
+          <th class="pb-1">Reps</th>
+          <th class="pb-1">Weight</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in ex.sets %}
+        <tr class="border-b last:border-b-0">
+          <td class="py-1.5 text-gray-500">{{ s.set_number }}</td>
+          <td class="py-1.5">{{ s.reps if s.reps is not none else "—" }}</td>
+          <td class="py-1.5">{{ s.weight_kg if s.weight_kg is not none else "—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

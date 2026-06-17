@@ -262,6 +262,16 @@ async def get_recent_workouts(db: AsyncSession, limit: int = 5) -> list[Workout]
     return r.scalars().all()
 
 
+async def get_workout_history(db: AsyncSession) -> list[Workout]:
+    r = await db.execute(
+        select(Workout)
+        .where(Workout.finished == True)
+        .order_by(Workout.date.desc(), Workout.id.desc())
+        .options(selectinload(Workout.exercises).selectinload(WorkoutExercise.sets))
+    )
+    return r.scalars().all()
+
+
 async def get_daily_minutes_last_7(db: AsyncSession) -> list[int]:
     from datetime import timedelta
 

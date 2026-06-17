@@ -36,6 +36,28 @@ async def search_exercises(
     )
 
 
+@router.get("/history", response_class=HTMLResponse)
+async def workout_history(request: Request, db: AsyncSession = Depends(get_session)):
+    workouts = await workout_service.get_workout_history(db)
+    return templates.TemplateResponse(
+        request,
+        "workout_history.html",
+        {"workouts": workouts},
+    )
+
+
+@router.get("/history/{workout_id}", response_class=HTMLResponse)
+async def workout_history_detail(request: Request, workout_id: str, db: AsyncSession = Depends(get_session)):
+    workout = await workout_service.get_workout(db, workout_id)
+    if not workout or not workout.finished:
+        return RedirectResponse(url="/workout/history", status_code=303)
+    return templates.TemplateResponse(
+        request,
+        "workout_history_detail.html",
+        {"workout": workout},
+    )
+
+
 @router.get("/{workout_id}", response_class=HTMLResponse)
 async def workout_page(request: Request, workout_id: str, db: AsyncSession = Depends(get_session)):
     workout = await workout_service.get_workout(db, workout_id)
