@@ -18,6 +18,11 @@ async def init_db() -> None:
                 text("ALTER TABLE workout_exercises ADD COLUMN muscle_group VARCHAR(20) DEFAULT 'other'")
             )
 
+        workout_cols = await conn.execute(text("PRAGMA table_info(workouts)"))
+        workout_names = {row[1] for row in workout_cols.fetchall()}
+        if "duration_minutes" not in workout_names:
+            await conn.execute(text("ALTER TABLE workouts ADD COLUMN duration_minutes REAL"))
+
     await seed_exercise_catalog()
 
 

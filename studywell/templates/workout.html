@@ -1,12 +1,22 @@
 {% extends "base.html" %}
 {% block title %}Workout — StudyWell{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-6 gap-4">
+<div class="flex items-start justify-between mb-6 gap-4 flex-wrap">
   <h1 class="text-2xl font-bold">
     {% if workout.name %}{{ workout.name }}{% else %}Workout Session{% endif %}
   </h1>
-  <form action="/workout/{{ workout.id }}/finish" method="post">
+  <form action="/workout/{{ workout.id }}/finish" method="post" class="flex items-end gap-3 flex-wrap">
     <input type="hidden" id="sets-payload" name="sets_payload" value="[]" />
+    <div class="flex flex-col">
+      <span class="text-xs text-gray-500 uppercase tracking-wide">Ongoing Timer</span>
+      <span id="workout-timer" class="font-semibold text-lg text-indigo-700">00:00:00</span>
+    </div>
+    <div class="flex flex-col">
+      <label for="workout-minutes" class="text-xs text-gray-500 uppercase tracking-wide">Workout Time (min)</label>
+      <input id="workout-minutes" name="workout_minutes" type="number" step="0.1" min="0"
+             placeholder="Auto"
+             class="w-32 border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+    </div>
     <button type="submit"
             onclick="prepareFinish(event)"
             class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium text-sm">
@@ -118,19 +128,18 @@ function addPlannedSet(exId, exType) {
     ? `<input type="number" data-reps min="1" max="999" placeholder="Reps" class="w-20 border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />`
     : `<input type="number" data-reps min="1" max="999" placeholder="Reps" class="w-20 border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />`;
 
-  const weightCell = exType === 'weighted'
-    ? `<input type="number" data-weight step="0.5" min="0" max="1000" placeholder="Weight" class="w-24 border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />`
+  const hasWeight = (exType === 'weighted' || exType === 'bodyweight');
+  const weightCell = hasWeight
+    ? `<input type="number" data-weight step="0.5" min="0" max="1000" placeholder="${exType === 'bodyweight' ? 'Added weight' : 'Weight'}" class="w-28 border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />`
     : ``;
 
   row.innerHTML = `
     <td class="py-1.5 text-gray-500 align-middle" data-set-number></td>
-    <td colspan="${exType === 'weighted' ? '3' : (exType === 'cardio' ? '1' : '2')}" class="py-1.5">
-      <div class="flex flex-wrap items-center gap-2">
-        ${repsCell}
-        ${weightCell}
-        <button type="button" class="px-2.5 py-1 bg-rose-100 text-rose-700 rounded-lg hover:bg-rose-200 text-xs font-semibold"
-                onclick="this.closest('tr').remove(); renumberSets('${exId}')">Remove</button>
-      </div>
+    <td class="py-1.5">${repsCell}</td>
+    ${hasWeight ? `<td class="py-1.5">${weightCell}</td>` : ``}
+    <td class="py-1.5 text-right">
+      <button type="button" class="px-2.5 py-1 bg-rose-100 text-rose-700 rounded-lg hover:bg-rose-200 text-xs font-semibold"
+              onclick="this.closest('tr').remove(); renumberSets('${exId}')">Remove</button>
     </td>
   `;
   tbody.appendChild(row);
@@ -150,12 +159,30 @@ function prepareFinish(evt) {
       sets.push({
         set_number: idx + 1,
         reps: repsEl ? repsEl.value : null,
-        weight_kg: (exType === 'weighted' && weightEl) ? weightEl.value : null,
+        weight_kg: ((exType === 'weighted' || exType === 'bodyweight') && weightEl) ? weightEl.value : null,
       });
     });
     payload.push({ exercise_id: exId, sets });
   });
+
+  const minutesInput = document.getElementById('workout-minutes');
+  if (!minutesInput.value) {
+    const elapsedSeconds = Math.floor((Date.now() - workoutStartMs) / 1000);
+    const autoMinutes = Math.round((elapsedSeconds / 60) * 10) / 10;
+    minutesInput.value = autoMinutes;
+  }
+
   document.getElementById('sets-payload').value = JSON.stringify(payload);
 }
+
+const workoutStartMs = Date.now();
+setInterval(() => {
+  const elapsed = Math.floor((Date.now() - workoutStartMs) / 1000);
+  const h = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+  const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+  const s = String(elapsed % 60).padStart(2, '0');
+  const timer = document.getElementById('workout-timer');
+  if (timer) timer.textContent = `${h}:${m}:${s}`;
+}, 1000);
 </script>
 {% endblock %}

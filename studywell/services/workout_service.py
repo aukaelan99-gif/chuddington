@@ -175,7 +175,12 @@ async def finish_workout(db: AsyncSession, workout_id: str) -> None:
         await db.commit()
 
 
-async def finalize_workout_with_sets(db: AsyncSession, workout_id: str, sets_payload: list[dict]) -> None:
+async def finalize_workout_with_sets(
+    db: AsyncSession,
+    workout_id: str,
+    sets_payload: list[dict],
+    workout_minutes: float | None = None,
+) -> None:
     workout = await get_workout(db, workout_id)
     if not workout:
         return
@@ -205,6 +210,7 @@ async def finalize_workout_with_sets(db: AsyncSession, workout_id: str, sets_pay
                 )
             )
 
+    workout.duration_minutes = workout_minutes
     workout.finished = True
     await db.commit()
 

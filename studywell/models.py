@@ -103,6 +103,7 @@ class Workout(Base):
     id:       Mapped[str]      = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     name:     Mapped[str | None] = mapped_column(String(100), nullable=True)
     date:     Mapped[date]     = mapped_column(Date)
+    duration_minutes: Mapped[float | None] = mapped_column(Float, nullable=True)
     finished: Mapped[bool]     = mapped_column(Boolean, default=False)
     exercises: Mapped[list["WorkoutExercise"]] = relationship(
         back_populates="workout", cascade="all, delete-orphan", order_by="WorkoutExercise.order"

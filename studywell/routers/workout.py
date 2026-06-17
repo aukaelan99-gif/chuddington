@@ -119,11 +119,12 @@ async def remove_set(
 async def finish_workout(
     workout_id: str,
     sets_payload: str = Form("[]"),
+    workout_minutes: float | None = Form(None),
     db: AsyncSession = Depends(get_session),
 ):
     try:
         payload = json.loads(sets_payload)
     except json.JSONDecodeError:
         payload = []
-    await workout_service.finalize_workout_with_sets(db, workout_id, payload)
+    await workout_service.finalize_workout_with_sets(db, workout_id, payload, workout_minutes)
     return RedirectResponse(url="/exercise", status_code=303)

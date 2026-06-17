@@ -23,8 +23,8 @@
       <tr class="text-left text-gray-400 border-b text-xs uppercase">
         <th class="pb-1">Set</th>
         <th class="pb-1">Reps</th>
-        {% if is_weighted %}<th class="pb-1">Weight</th>{% endif %}
-        <th class="pb-1">Actions</th>
+        {% if is_weighted or is_bodyweight %}<th class="pb-1">Weight</th>{% endif %}
+        <th class="pb-1 text-right">Actions</th>
       </tr>
     </thead>
     <tbody id="sets-{{ ex.id }}">
