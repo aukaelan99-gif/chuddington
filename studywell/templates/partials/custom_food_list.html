@@ -18,7 +18,7 @@
           <form hx-post="/diet/foods/custom/{{ f.id }}/update"
                 hx-target="#custom-food-list"
                 hx-swap="outerHTML"
-                class="custom-food-edit-form grid grid-cols-12 gap-2 items-center">
+          class="custom-food-edit-form grid grid-cols-12 gap-2 items-center">
             <input name="name" value="{{ f.name }}" required class="col-span-2 border rounded px-2 py-1" />
             <select name="category" class="col-span-2 border rounded px-2 py-1 text-sm">
               {% for c in ["protein","vegetable","fruit","grain","dairy","fat","snack","beverage","other"] %}

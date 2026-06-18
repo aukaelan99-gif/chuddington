@@ -60,6 +60,13 @@ class MealEntry(Base):
     protein_g: Mapped[float | None] = mapped_column(Float, nullable=True)
     carbs_g: Mapped[float | None] = mapped_column(Float, nullable=True)
     fat_g: Mapped[float | None] = mapped_column(Float, nullable=True)
+    vitamin_a_mcg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    vitamin_c_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    vitamin_d_mcg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    vitamin_b12_mcg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    calcium_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    iron_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    potassium_mg: Mapped[float | None] = mapped_column(Float, nullable=True)
     date: Mapped[date] = mapped_column(Date)
 
 
@@ -83,6 +90,13 @@ class FoodItem(Base):
     protein_g:    Mapped[float]      = mapped_column(Float, default=0.0)
     carbs_g:      Mapped[float]      = mapped_column(Float, default=0.0)
     fat_g:        Mapped[float]      = mapped_column(Float, default=0.0)
+    vitamin_a_mcg: Mapped[float]     = mapped_column(Float, default=0.0)
+    vitamin_c_mg: Mapped[float]      = mapped_column(Float, default=0.0)
+    vitamin_d_mcg: Mapped[float]     = mapped_column(Float, default=0.0)
+    vitamin_b12_mcg: Mapped[float]   = mapped_column(Float, default=0.0)
+    calcium_mg: Mapped[float]        = mapped_column(Float, default=0.0)
+    iron_mg: Mapped[float]           = mapped_column(Float, default=0.0)
+    potassium_mg: Mapped[float]      = mapped_column(Float, default=0.0)
 
 
 class SavedMeal(Base):
@@ -126,6 +140,13 @@ class DailyGoals(Base):
     protein_target: Mapped[int] = mapped_column(Integer, default=150)
     carbs_target: Mapped[int] = mapped_column(Integer, default=250)
     fat_target: Mapped[int] = mapped_column(Integer, default=70)
+    vitamin_a_target_mcg: Mapped[int] = mapped_column(Integer, default=900)
+    vitamin_c_target_mg: Mapped[int] = mapped_column(Integer, default=90)
+    vitamin_d_target_mcg: Mapped[float] = mapped_column(Float, default=15.0)
+    vitamin_b12_target_mcg: Mapped[float] = mapped_column(Float, default=2.4)
+    calcium_target_mg: Mapped[int] = mapped_column(Integer, default=1000)
+    iron_target_mg: Mapped[float] = mapped_column(Float, default=18.0)
+    potassium_target_mg: Mapped[int] = mapped_column(Integer, default=3500)
     exercise_minutes: Mapped[int] = mapped_column(Integer, default=30)
     water_glasses: Mapped[int] = mapped_column(Integer, default=8)
 

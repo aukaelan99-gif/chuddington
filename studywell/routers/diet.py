@@ -25,18 +25,42 @@ async def _build_diet_summary_context(db: AsyncSession, user_id: str, today: dat
     protein_target = goals.protein_target if goals else 150
     carbs_target = goals.carbs_target if goals else 250
     fat_target = goals.fat_target if goals else 70
+    vitamin_a_target_mcg = goals.vitamin_a_target_mcg if goals else 900
+    vitamin_c_target_mg = goals.vitamin_c_target_mg if goals else 90
+    vitamin_d_target_mcg = goals.vitamin_d_target_mcg if goals else 15.0
+    vitamin_b12_target_mcg = goals.vitamin_b12_target_mcg if goals else 2.4
+    calcium_target_mg = goals.calcium_target_mg if goals else 1000
+    iron_target_mg = goals.iron_target_mg if goals else 18.0
+    potassium_target_mg = goals.potassium_target_mg if goals else 3500
     calorie_target = protein_target * 4 + carbs_target * 4 + fat_target * 9
     calorie_pct = min(100, round(macros["calories"] / max(calorie_target, 1) * 100))
     total_macros = macros["protein"] + macros["carbs"] + macros["fat"]
+    micronutrient_progress = {
+        "vitamin_a": min(100, round(macros["vitamin_a_mcg"] / max(vitamin_a_target_mcg, 1) * 100)),
+        "vitamin_c": min(100, round(macros["vitamin_c_mg"] / max(vitamin_c_target_mg, 1) * 100)),
+        "vitamin_d": min(100, round(macros["vitamin_d_mcg"] / max(vitamin_d_target_mcg, 0.1) * 100)),
+        "vitamin_b12": min(100, round(macros["vitamin_b12_mcg"] / max(vitamin_b12_target_mcg, 0.1) * 100)),
+        "calcium": min(100, round(macros["calcium_mg"] / max(calcium_target_mg, 1) * 100)),
+        "iron": min(100, round(macros["iron_mg"] / max(iron_target_mg, 0.1) * 100)),
+        "potassium": min(100, round(macros["potassium_mg"] / max(potassium_target_mg, 1) * 100)),
+    }
 
     return {
         "macros": macros,
         "protein_target": protein_target,
         "carbs_target": carbs_target,
         "fat_target": fat_target,
+        "vitamin_a_target_mcg": vitamin_a_target_mcg,
+        "vitamin_c_target_mg": vitamin_c_target_mg,
+        "vitamin_d_target_mcg": vitamin_d_target_mcg,
+        "vitamin_b12_target_mcg": vitamin_b12_target_mcg,
+        "calcium_target_mg": calcium_target_mg,
+        "iron_target_mg": iron_target_mg,
+        "potassium_target_mg": potassium_target_mg,
         "calorie_target": calorie_target,
         "calorie_pct": calorie_pct,
         "total_macros": total_macros,
+        "micronutrient_progress": micronutrient_progress,
     }
 
 
@@ -126,6 +150,13 @@ async def update_logged_meal(
     protein_g: float = Form(0.0),
     carbs_g: float = Form(0.0),
     fat_g: float = Form(0.0),
+    vitamin_a_mcg: float | None = Form(None),
+    vitamin_c_mg: float | None = Form(None),
+    vitamin_d_mcg: float | None = Form(None),
+    vitamin_b12_mcg: float | None = Form(None),
+    calcium_mg: float | None = Form(None),
+    iron_mg: float | None = Form(None),
+    potassium_mg: float | None = Form(None),
     db: AsyncSession = Depends(get_session),
     user: User = Depends(get_current_user),
 ):
@@ -139,6 +170,13 @@ async def update_logged_meal(
         protein_g,
         carbs_g,
         fat_g,
+        vitamin_a_mcg,
+        vitamin_c_mg,
+        vitamin_d_mcg,
+        vitamin_b12_mcg,
+        calcium_mg,
+        iron_mg,
+        potassium_mg,
         date_value,
     )
     if not ok:
@@ -186,6 +224,13 @@ async def add_custom_food(
     protein_g: float = Form(0.0),
     carbs_g: float = Form(0.0),
     fat_g: float = Form(0.0),
+    vitamin_a_mcg: float = Form(0.0),
+    vitamin_c_mg: float = Form(0.0),
+    vitamin_d_mcg: float = Form(0.0),
+    vitamin_b12_mcg: float = Form(0.0),
+    calcium_mg: float = Form(0.0),
+    iron_mg: float = Form(0.0),
+    potassium_mg: float = Form(0.0),
     db: AsyncSession = Depends(get_session),
     user: User = Depends(get_current_user),
 ):
@@ -199,6 +244,13 @@ async def add_custom_food(
             max(0.0, min(protein_g, 500.0)),
             max(0.0, min(carbs_g, 500.0)),
             max(0.0, min(fat_g, 500.0)),
+            max(0.0, min(vitamin_a_mcg, 50000.0)),
+            max(0.0, min(vitamin_c_mg, 10000.0)),
+            max(0.0, min(vitamin_d_mcg, 1000.0)),
+            max(0.0, min(vitamin_b12_mcg, 1000.0)),
+            max(0.0, min(calcium_mg, 10000.0)),
+            max(0.0, min(iron_mg, 1000.0)),
+            max(0.0, min(potassium_mg, 20000.0)),
         )
 
     custom_foods = await diet_service.get_custom_foods(db, user.id)
@@ -217,6 +269,13 @@ async def update_custom_food(
     protein_g: float = Form(0.0),
     carbs_g: float = Form(0.0),
     fat_g: float = Form(0.0),
+    vitamin_a_mcg: float = Form(0.0),
+    vitamin_c_mg: float = Form(0.0),
+    vitamin_d_mcg: float = Form(0.0),
+    vitamin_b12_mcg: float = Form(0.0),
+    calcium_mg: float = Form(0.0),
+    iron_mg: float = Form(0.0),
+    potassium_mg: float = Form(0.0),
     db: AsyncSession = Depends(get_session),
     user: User = Depends(get_current_user),
 ):
@@ -231,6 +290,13 @@ async def update_custom_food(
             max(0.0, min(protein_g, 500.0)),
             max(0.0, min(carbs_g, 500.0)),
             max(0.0, min(fat_g, 500.0)),
+            max(0.0, min(vitamin_a_mcg, 50000.0)),
+            max(0.0, min(vitamin_c_mg, 10000.0)),
+            max(0.0, min(vitamin_d_mcg, 1000.0)),
+            max(0.0, min(vitamin_b12_mcg, 1000.0)),
+            max(0.0, min(calcium_mg, 10000.0)),
+            max(0.0, min(iron_mg, 1000.0)),
+            max(0.0, min(potassium_mg, 20000.0)),
         )
 
     custom_foods = await diet_service.get_custom_foods(db, user.id)
@@ -418,6 +484,55 @@ async def update_macro_goal(
     return RedirectResponse(url="/diet", status_code=303)
 
 
+@router.post("/micro-goal")
+async def update_micro_goal(
+    vitamin_a_target_mcg: int = Form(...),
+    vitamin_c_target_mg: int = Form(...),
+    vitamin_d_target_mcg: float = Form(...),
+    vitamin_b12_target_mcg: float = Form(...),
+    calcium_target_mg: int = Form(...),
+    iron_target_mg: float = Form(...),
+    potassium_target_mg: int = Form(...),
+    db: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    import uuid
+
+    vit_a = max(0, min(vitamin_a_target_mcg, 50000))
+    vit_c = max(0, min(vitamin_c_target_mg, 10000))
+    vit_d = max(0.0, min(vitamin_d_target_mcg, 1000.0))
+    b12 = max(0.0, min(vitamin_b12_target_mcg, 1000.0))
+    calcium = max(0, min(calcium_target_mg, 10000))
+    iron = max(0.0, min(iron_target_mg, 1000.0))
+    potassium = max(0, min(potassium_target_mg, 20000))
+
+    r = await db.execute(select(DailyGoals).where(DailyGoals.user_id == user.id))
+    goals = r.scalar_one_or_none()
+    if goals:
+        goals.vitamin_a_target_mcg = vit_a
+        goals.vitamin_c_target_mg = vit_c
+        goals.vitamin_d_target_mcg = vit_d
+        goals.vitamin_b12_target_mcg = b12
+        goals.calcium_target_mg = calcium
+        goals.iron_target_mg = iron
+        goals.potassium_target_mg = potassium
+    else:
+        goals = DailyGoals(
+            id=str(uuid.uuid4()),
+            user_id=user.id,
+            vitamin_a_target_mcg=vit_a,
+            vitamin_c_target_mg=vit_c,
+            vitamin_d_target_mcg=vit_d,
+            vitamin_b12_target_mcg=b12,
+            calcium_target_mg=calcium,
+            iron_target_mg=iron,
+            potassium_target_mg=potassium,
+        )
+        db.add(goals)
+    await db.commit()
+    return RedirectResponse(url="/diet", status_code=303)
+
+
 @router.post("/add", response_class=HTMLResponse)
 async def add_meal(
     request: Request,
@@ -427,6 +542,13 @@ async def add_meal(
     protein_g: float = Form(0.0),
     carbs_g: float = Form(0.0),
     fat_g: float = Form(0.0),
+    vitamin_a_mcg: float = Form(0.0),
+    vitamin_c_mg: float = Form(0.0),
+    vitamin_d_mcg: float = Form(0.0),
+    vitamin_b12_mcg: float = Form(0.0),
+    calcium_mg: float = Form(0.0),
+    iron_mg: float = Form(0.0),
+    potassium_mg: float = Form(0.0),
     items_json: str = Form("[]"),
     db: AsyncSession = Depends(get_session),
     user: User = Depends(get_current_user),
@@ -446,6 +568,13 @@ async def add_meal(
         protein_g = max(0.0, min(float(protein_g), 500.0))
         carbs_g = max(0.0, min(float(carbs_g), 500.0))
         fat_g = max(0.0, min(float(fat_g), 500.0))
+        vitamin_a_mcg = max(0.0, min(float(vitamin_a_mcg), 50000.0))
+        vitamin_c_mg = max(0.0, min(float(vitamin_c_mg), 10000.0))
+        vitamin_d_mcg = max(0.0, min(float(vitamin_d_mcg), 1000.0))
+        vitamin_b12_mcg = max(0.0, min(float(vitamin_b12_mcg), 1000.0))
+        calcium_mg = max(0.0, min(float(calcium_mg), 10000.0))
+        iron_mg = max(0.0, min(float(iron_mg), 1000.0))
+        potassium_mg = max(0.0, min(float(potassium_mg), 20000.0))
 
     data = MealEntryCreate(
         name=clean_name,
@@ -454,6 +583,13 @@ async def add_meal(
         protein_g=protein_g or None,
         carbs_g=carbs_g or None,
         fat_g=fat_g or None,
+        vitamin_a_mcg=vitamin_a_mcg or None,
+        vitamin_c_mg=vitamin_c_mg or None,
+        vitamin_d_mcg=vitamin_d_mcg or None,
+        vitamin_b12_mcg=vitamin_b12_mcg or None,
+        calcium_mg=calcium_mg or None,
+        iron_mg=iron_mg or None,
+        potassium_mg=potassium_mg or None,
     )
     meal = await diet_service.create_meal(db, data, date.today(), user.id)
     return templates.TemplateResponse(request, "partials/meal_row.html", {"meal": meal})

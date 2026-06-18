@@ -49,7 +49,14 @@
                   data-cal="{{ f.calories }}"
                   data-protein="{{ f.protein_g }}"
                   data-carbs="{{ f.carbs_g }}"
-                  data-fat="{{ f.fat_g }}">
+              data-fat="{{ f.fat_g }}"
+              data-vitamin-a="{{ f.vitamin_a_mcg }}"
+              data-vitamin-c="{{ f.vitamin_c_mg }}"
+              data-vitamin-d="{{ f.vitamin_d_mcg }}"
+              data-vitamin-b12="{{ f.vitamin_b12_mcg }}"
+              data-calcium="{{ f.calcium_mg }}"
+              data-iron="{{ f.iron_mg }}"
+              data-potassium="{{ f.potassium_mg }}">
             {{ f.name }} ({{ f.base_grams|int }} g, {{ f.calories }} kcal)
           </option>
           {% endfor %}
@@ -159,11 +166,12 @@
             <th class="py-2 px-2">Protein</th>
             <th class="py-2 px-2">Carbs</th>
             <th class="py-2 px-2">Fat</th>
+            <th class="py-2 px-2">Micros (A/C/Ca/Fe)</th>
             <th class="py-2 px-2"></th>
           </tr>
         </thead>
         <tbody id="builder-items-body">
-          <tr id="builder-empty-row"><td colspan="8" class="py-3 px-2 text-gray-400 text-sm">No foods added yet.</td></tr>
+          <tr id="builder-empty-row"><td colspan="9" class="py-3 px-2 text-gray-400 text-sm">No foods added yet.</td></tr>
         </tbody>
       </table>
     </div>
@@ -173,12 +181,24 @@
       <div class="px-3 py-2 bg-gray-50 rounded-lg">Protein: <strong id="total-protein">0.0</strong>g</div>
       <div class="px-3 py-2 bg-gray-50 rounded-lg">Carbs: <strong id="total-carbs">0.0</strong>g</div>
       <div class="px-3 py-2 bg-gray-50 rounded-lg">Fat: <strong id="total-fat">0.0</strong>g</div>
+      <div class="px-3 py-2 bg-gray-50 rounded-lg">Vit A: <strong id="total-vitamin-a">0.0</strong> mcg</div>
+      <div class="px-3 py-2 bg-gray-50 rounded-lg">Vit C: <strong id="total-vitamin-c">0.0</strong> mg</div>
+      <div class="px-3 py-2 bg-gray-50 rounded-lg">Calcium: <strong id="total-calcium">0.0</strong> mg</div>
+      <div class="px-3 py-2 bg-gray-50 rounded-lg">Iron: <strong id="total-iron">0.0</strong> mg</div>
+      <div class="px-3 py-2 bg-gray-50 rounded-lg">Potassium: <strong id="total-potassium">0.0</strong> mg</div>
     </div>
 
     <input type="hidden" name="calories" id="meal-calories" value="0" />
     <input type="hidden" name="protein_g" id="meal-protein" value="0" />
     <input type="hidden" name="carbs_g" id="meal-carbs" value="0" />
     <input type="hidden" name="fat_g" id="meal-fat" value="0" />
+    <input type="hidden" name="vitamin_a_mcg" id="meal-vitamin-a" value="0" />
+    <input type="hidden" name="vitamin_c_mg" id="meal-vitamin-c" value="0" />
+    <input type="hidden" name="vitamin_d_mcg" id="meal-vitamin-d" value="0" />
+    <input type="hidden" name="vitamin_b12_mcg" id="meal-vitamin-b12" value="0" />
+    <input type="hidden" name="calcium_mg" id="meal-calcium" value="0" />
+    <input type="hidden" name="iron_mg" id="meal-iron" value="0" />
+    <input type="hidden" name="potassium_mg" id="meal-potassium" value="0" />
     <input type="hidden" name="items_json" id="meal-items-json" value="[]" />
 
     <div class="flex items-center gap-3 flex-wrap">
@@ -233,12 +253,19 @@ function computeItem(item) {
     protein: round1(item.base_protein * factor),
     carbs: round1(item.base_carbs * factor),
     fat: round1(item.base_fat * factor),
+    vitaminA: round1(item.base_vitamin_a * factor),
+    vitaminC: round1(item.base_vitamin_c * factor),
+    vitaminD: round1(item.base_vitamin_d * factor),
+    vitaminB12: round1(item.base_vitamin_b12 * factor),
+    calcium: round1(item.base_calcium * factor),
+    iron: round1(item.base_iron * factor),
+    potassium: round1(item.base_potassium * factor),
   };
 }
 
 function renderMealBuilder() {
   if (!mealItems.length) {
-    builderBody.innerHTML = '<tr id="builder-empty-row"><td colspan="8" class="py-3 px-2 text-gray-400 text-sm">No foods added yet.</td></tr>';
+    builderBody.innerHTML = '<tr id="builder-empty-row"><td colspan="9" class="py-3 px-2 text-gray-400 text-sm">No foods added yet.</td></tr>';
   } else {
     builderBody.innerHTML = mealItems.map((item, idx) => {
       const m = computeItem(item);
@@ -251,6 +278,7 @@ function renderMealBuilder() {
           <td class="py-2 px-2">${m.protein}</td>
           <td class="py-2 px-2">${m.carbs}</td>
           <td class="py-2 px-2">${m.fat}</td>
+          <td class="py-2 px-2 text-xs text-gray-500">A ${m.vitaminA} / C ${m.vitaminC} / Ca ${m.calcium} / Fe ${m.iron}</td>
           <td class="py-2 px-2 text-right"><button type="button" class="remove-item text-xs text-red-500" data-idx="${idx}">Remove</button></td>
         </tr>`;
     }).join('');
@@ -262,18 +290,37 @@ function renderMealBuilder() {
     acc.protein += m.protein;
     acc.carbs += m.carbs;
     acc.fat += m.fat;
+    acc.vitaminA += m.vitaminA;
+    acc.vitaminC += m.vitaminC;
+    acc.vitaminD += m.vitaminD;
+    acc.vitaminB12 += m.vitaminB12;
+    acc.calcium += m.calcium;
+    acc.iron += m.iron;
+    acc.potassium += m.potassium;
     return acc;
-  }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+  }, { calories: 0, protein: 0, carbs: 0, fat: 0, vitaminA: 0, vitaminC: 0, vitaminD: 0, vitaminB12: 0, calcium: 0, iron: 0, potassium: 0 });
 
   document.getElementById('total-calories').textContent = totals.calories;
   document.getElementById('total-protein').textContent = round1(totals.protein).toFixed(1);
   document.getElementById('total-carbs').textContent = round1(totals.carbs).toFixed(1);
   document.getElementById('total-fat').textContent = round1(totals.fat).toFixed(1);
+  document.getElementById('total-vitamin-a').textContent = round1(totals.vitaminA).toFixed(1);
+  document.getElementById('total-vitamin-c').textContent = round1(totals.vitaminC).toFixed(1);
+  document.getElementById('total-calcium').textContent = round1(totals.calcium).toFixed(1);
+  document.getElementById('total-iron').textContent = round1(totals.iron).toFixed(1);
+  document.getElementById('total-potassium').textContent = round1(totals.potassium).toFixed(1);
 
   document.getElementById('meal-calories').value = totals.calories;
   document.getElementById('meal-protein').value = round1(totals.protein);
   document.getElementById('meal-carbs').value = round1(totals.carbs);
   document.getElementById('meal-fat').value = round1(totals.fat);
+  document.getElementById('meal-vitamin-a').value = round1(totals.vitaminA);
+  document.getElementById('meal-vitamin-c').value = round1(totals.vitaminC);
+  document.getElementById('meal-vitamin-d').value = round1(totals.vitaminD);
+  document.getElementById('meal-vitamin-b12').value = round1(totals.vitaminB12);
+  document.getElementById('meal-calcium').value = round1(totals.calcium);
+  document.getElementById('meal-iron').value = round1(totals.iron);
+  document.getElementById('meal-potassium').value = round1(totals.potassium);
   document.getElementById('meal-items-json').value = JSON.stringify(mealItems.map(i => ({
     food_id: i.id,
     name: i.name,
@@ -284,6 +331,13 @@ function renderMealBuilder() {
     protein_g: i.base_protein,
     carbs_g: i.base_carbs,
     fat_g: i.base_fat,
+    vitamin_a_mcg: i.base_vitamin_a,
+    vitamin_c_mg: i.base_vitamin_c,
+    vitamin_d_mcg: i.base_vitamin_d,
+    vitamin_b12_mcg: i.base_vitamin_b12,
+    calcium_mg: i.base_calcium,
+    iron_mg: i.base_iron,
+    potassium_mg: i.base_potassium,
     is_custom: i.is_custom,
   })));
 
@@ -336,8 +390,10 @@ async function runFoodSearch() {
            data-custom="${f.is_custom ? '1' : '0'}"
            data-category="${f.category || 'other'}"
            data-name="${f.name}" data-cal="${f.calories}"
-           data-protein="${f.protein_g}" data-carbs="${f.carbs_g}" data-fat="${f.fat_g}">
-        <div class="flex items-start justify-between gap-3">
+           data-protein="${f.protein_g}" data-carbs="${f.carbs_g}" data-fat="${f.fat_g}"
+           data-vitamin-a="${f.vitamin_a_mcg || 0}" data-vitamin-c="${f.vitamin_c_mg || 0}" data-vitamin-d="${f.vitamin_d_mcg || 0}"
+           data-vitamin-b12="${f.vitamin_b12_mcg || 0}" data-calcium="${f.calcium_mg || 0}" data-iron="${f.iron_mg || 0}" data-potassium="${f.potassium_mg || 0}">
+        <div class="flex items-center justify-between gap-3">
           <div class="min-w-0">
             <div class="font-medium leading-tight truncate">${f.name}</div>
             <div class="text-xs text-gray-400 mt-0.5 flex items-center gap-2 flex-wrap">
@@ -346,7 +402,7 @@ async function runFoodSearch() {
               ${f.is_custom ? '<span class="text-indigo-500">custom</span>' : ''}
             </div>
           </div>
-          <div class="text-xs text-gray-600 whitespace-nowrap text-right leading-tight mt-0.5">
+          <div class="text-xs text-gray-600 whitespace-nowrap text-right leading-tight">
             ${f.calories} kcal · P${f.protein_g} C${f.carbs_g} F${f.fat_g}
           </div>
         </div>
@@ -364,6 +420,13 @@ async function runFoodSearch() {
           base_protein: Number(el.dataset.protein || 0),
           base_carbs: Number(el.dataset.carbs || 0),
           base_fat: Number(el.dataset.fat || 0),
+          base_vitamin_a: Number(el.dataset.vitaminA || 0),
+          base_vitamin_c: Number(el.dataset.vitaminC || 0),
+          base_vitamin_d: Number(el.dataset.vitaminD || 0),
+          base_vitamin_b12: Number(el.dataset.vitaminB12 || 0),
+          base_calcium: Number(el.dataset.calcium || 0),
+          base_iron: Number(el.dataset.iron || 0),
+          base_potassium: Number(el.dataset.potassium || 0),
           is_custom: el.dataset.custom === '1',
         };
         mealItems.push(item);
@@ -440,7 +503,6 @@ function bindCreateCustomFoodInputClamps() {
   const proteinInput = form.querySelector('input[name="protein_g"]');
   const carbsInput = form.querySelector('input[name="carbs_g"]');
   const fatInput = form.querySelector('input[name="fat_g"]');
-
   const clampAll = () => {
     clampInputValue(baseInput, 1, 5000);
     clampInputValue(proteinInput, 0, 500);
@@ -509,6 +571,13 @@ function bindCreateCustomFoodActions() {
       base_protein: protein,
       base_carbs: carbs,
       base_fat: fat,
+      base_vitamin_a: 0,
+      base_vitamin_c: 0,
+      base_vitamin_d: 0,
+      base_vitamin_b12: 0,
+      base_calcium: 0,
+      base_iron: 0,
+      base_potassium: 0,
       is_custom: true,
     });
 
@@ -540,6 +609,13 @@ function bindSavedCustomFoodDropdown() {
       base_protein: Number(opt.dataset.protein || 0),
       base_carbs: Number(opt.dataset.carbs || 0),
       base_fat: Number(opt.dataset.fat || 0),
+      base_vitamin_a: Number(opt.dataset.vitaminA || 0),
+      base_vitamin_c: Number(opt.dataset.vitaminC || 0),
+      base_vitamin_d: Number(opt.dataset.vitaminD || 0),
+      base_vitamin_b12: Number(opt.dataset.vitaminB12 || 0),
+      base_calcium: Number(opt.dataset.calcium || 0),
+      base_iron: Number(opt.dataset.iron || 0),
+      base_potassium: Number(opt.dataset.potassium || 0),
       is_custom: true,
     };
 
@@ -588,6 +664,13 @@ function bindSavedMealTemplateActions() {
         protein_g: i.base_protein,
         carbs_g: i.base_carbs,
         fat_g: i.base_fat,
+        vitamin_a_mcg: i.base_vitamin_a,
+        vitamin_c_mg: i.base_vitamin_c,
+        vitamin_d_mcg: i.base_vitamin_d,
+        vitamin_b12_mcg: i.base_vitamin_b12,
+        calcium_mg: i.base_calcium,
+        iron_mg: i.base_iron,
+        potassium_mg: i.base_potassium,
       }))));
 
       const res = await fetch('/diet/saved-meals/create', {
@@ -625,6 +708,13 @@ function bindSavedMealTemplateActions() {
         base_protein: Number(item.base_protein_g || 0),
         base_carbs: Number(item.base_carbs_g || 0),
         base_fat: Number(item.base_fat_g || 0),
+        base_vitamin_a: Number(item.base_vitamin_a_mcg || 0),
+        base_vitamin_c: Number(item.base_vitamin_c_mg || 0),
+        base_vitamin_d: Number(item.base_vitamin_d_mcg || 0),
+        base_vitamin_b12: Number(item.base_vitamin_b12_mcg || 0),
+        base_calcium: Number(item.base_calcium_mg || 0),
+        base_iron: Number(item.base_iron_mg || 0),
+        base_potassium: Number(item.base_potassium_mg || 0),
         is_custom: true,
       }));
       const mealNameInput = document.getElementById('meal-name');

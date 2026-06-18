@@ -1,7 +1,7 @@
-# StudyWell Presentation Notes
+# Chudlite Presentation Notes
 
 ## 1) Executive Pitch (30-45 sec)
-StudyWell is a full-stack student wellness platform that combines study tracking, fitness logging, nutrition monitoring, and AI-assisted learning in one integrated experience. Instead of forcing students to use separate tools for focus, health, and planning, StudyWell creates one daily workflow that improves consistency, accountability, and outcomes.
+Chudlite is a full-stack student wellness platform that combines study tracking, fitness logging, nutrition monitoring, and AI-assisted learning in one integrated experience. Instead of forcing students to use separate tools for focus, health, and planning, Chudlite creates one daily workflow that improves consistency, accountability, and outcomes.
 
 ## 2) Why We Built It
 - Problem: students struggle to balance academic performance with physical and mental wellness.
@@ -17,7 +17,7 @@ StudyWell is a full-stack student wellness platform that combines study tracking
 - UI/visualization: Tailwind CSS + Chart.js.
 - App structure: router/service separation to keep business logic maintainable and scalable.
 
-## 4) What Makes StudyWell Strong
+## 4) What Makes Chudlite Strong
 - Unified product scope: one app covers multiple wellness dimensions.
 - Practical AI utility: Chulk AI chat supports study workflows and named threads.
 - Personalization: theme system + avatar selection.
@@ -27,7 +27,7 @@ StudyWell is a full-stack student wellness platform that combines study tracking
 ## 5) Slide Deck Outline (recommended)
 1. Title + team + one-sentence value proposition.
 2. Problem statement and user pain points.
-3. Solution overview (StudyWell platform view).
+3. Solution overview (Chudlite platform view).
 4. Architecture diagram (client -> FastAPI -> services -> DB).
 5. Feature walkthrough (Study, Calendar, AI, Exercise, Diet, Insights, Settings).
 6. Technical highlights (HTMX interactions, async stack, validation, data model).
@@ -35,7 +35,7 @@ StudyWell is a full-stack student wellness platform that combines study tracking
 8. Future roadmap (notifications, analytics depth, integrations).
 
 ## 6) Demo Video Script (4-6 min)
-- Intro (20 sec): "I am showing StudyWell, a student wellness operating system."
+- Intro (20 sec): "I am showing Chudlite, a student wellness operating system."
 - Dashboard (30 sec): explain daily progress and quick status.
 - Study + Calendar (50 sec): add a study session, open calendar, show planning flow.
 - Chulk AI (45 sec): start chat, show named chat thread for tracking topics.
@@ -43,10 +43,10 @@ StudyWell is a full-stack student wellness platform that combines study tracking
 - Diet + Water (50 sec): log meal, show macro/calorie context, show hydration widget.
 - Insights (35 sec): show trend visibility and decision support.
 - Settings + Themes (30 sec): switch theme and avatar to show personalization.
-- Close (20 sec): "StudyWell matters because it turns disconnected habits into one measurable daily system."
+- Close (20 sec): "Chudlite matters because it turns disconnected habits into one measurable daily system."
 
 ## 7) Judge-Facing Closing Statement
-StudyWell is not a single-feature demo. It is a cohesive wellness platform with real product architecture, clear user value, and a credible growth path. We built it to solve a practical, high-frequency problem for students: maintaining performance without sacrificing health.
+Chudlite is not a single-feature demo. It is a cohesive wellness platform with real product architecture, clear user value, and a credible growth path. We built it to solve a practical, high-frequency problem for students: maintaining performance without sacrificing health.
 
 ## 8) Recording Quality Checklist
 - Keep resolution readable (at least 1080p).

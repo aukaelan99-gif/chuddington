@@ -26,6 +26,13 @@ class MealEntryCreate(BaseModel):
     protein_g: float | None = Field(default=None, ge=0, le=500)
     carbs_g: float | None = Field(default=None, ge=0, le=500)
     fat_g: float | None = Field(default=None, ge=0, le=500)
+    vitamin_a_mcg: float | None = Field(default=None, ge=0, le=50000)
+    vitamin_c_mg: float | None = Field(default=None, ge=0, le=10000)
+    vitamin_d_mcg: float | None = Field(default=None, ge=0, le=1000)
+    vitamin_b12_mcg: float | None = Field(default=None, ge=0, le=1000)
+    calcium_mg: float | None = Field(default=None, ge=0, le=10000)
+    iron_mg: float | None = Field(default=None, ge=0, le=1000)
+    potassium_mg: float | None = Field(default=None, ge=0, le=20000)
 
 
 class WaterUpdate(BaseModel):

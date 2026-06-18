@@ -91,6 +91,20 @@ async def init_db() -> None:
             await conn.execute(text("ALTER TABLE daily_goals ADD COLUMN carbs_target INTEGER DEFAULT 250"))
         if "fat_target" not in dg_names_after:
             await conn.execute(text("ALTER TABLE daily_goals ADD COLUMN fat_target INTEGER DEFAULT 70"))
+        if "vitamin_a_target_mcg" not in dg_names_after:
+            await conn.execute(text("ALTER TABLE daily_goals ADD COLUMN vitamin_a_target_mcg INTEGER DEFAULT 900"))
+        if "vitamin_c_target_mg" not in dg_names_after:
+            await conn.execute(text("ALTER TABLE daily_goals ADD COLUMN vitamin_c_target_mg INTEGER DEFAULT 90"))
+        if "vitamin_d_target_mcg" not in dg_names_after:
+            await conn.execute(text("ALTER TABLE daily_goals ADD COLUMN vitamin_d_target_mcg REAL DEFAULT 15.0"))
+        if "vitamin_b12_target_mcg" not in dg_names_after:
+            await conn.execute(text("ALTER TABLE daily_goals ADD COLUMN vitamin_b12_target_mcg REAL DEFAULT 2.4"))
+        if "calcium_target_mg" not in dg_names_after:
+            await conn.execute(text("ALTER TABLE daily_goals ADD COLUMN calcium_target_mg INTEGER DEFAULT 1000"))
+        if "iron_target_mg" not in dg_names_after:
+            await conn.execute(text("ALTER TABLE daily_goals ADD COLUMN iron_target_mg REAL DEFAULT 18.0"))
+        if "potassium_target_mg" not in dg_names_after:
+            await conn.execute(text("ALTER TABLE daily_goals ADD COLUMN potassium_target_mg INTEGER DEFAULT 3500"))
 
         # food_items category column
         fi_info = await conn.execute(text("PRAGMA table_info(food_items)"))
@@ -99,6 +113,49 @@ async def init_db() -> None:
             await conn.execute(text("ALTER TABLE food_items ADD COLUMN category VARCHAR DEFAULT 'other'"))
         if "base_grams" not in fi_cols:
             await conn.execute(text("ALTER TABLE food_items ADD COLUMN base_grams REAL DEFAULT 100"))
+        if "vitamin_a_mcg" not in fi_cols:
+            await conn.execute(text("ALTER TABLE food_items ADD COLUMN vitamin_a_mcg REAL DEFAULT 0"))
+        if "vitamin_c_mg" not in fi_cols:
+            await conn.execute(text("ALTER TABLE food_items ADD COLUMN vitamin_c_mg REAL DEFAULT 0"))
+        if "vitamin_d_mcg" not in fi_cols:
+            await conn.execute(text("ALTER TABLE food_items ADD COLUMN vitamin_d_mcg REAL DEFAULT 0"))
+        if "vitamin_b12_mcg" not in fi_cols:
+            await conn.execute(text("ALTER TABLE food_items ADD COLUMN vitamin_b12_mcg REAL DEFAULT 0"))
+        if "calcium_mg" not in fi_cols:
+            await conn.execute(text("ALTER TABLE food_items ADD COLUMN calcium_mg REAL DEFAULT 0"))
+        if "iron_mg" not in fi_cols:
+            await conn.execute(text("ALTER TABLE food_items ADD COLUMN iron_mg REAL DEFAULT 0"))
+        if "potassium_mg" not in fi_cols:
+            await conn.execute(text("ALTER TABLE food_items ADD COLUMN potassium_mg REAL DEFAULT 0"))
+        await conn.execute(
+            text(
+                "UPDATE food_items "
+                "SET vitamin_a_mcg = COALESCE(vitamin_a_mcg, 0), "
+                "vitamin_c_mg = COALESCE(vitamin_c_mg, 0), "
+                "vitamin_d_mcg = COALESCE(vitamin_d_mcg, 0), "
+                "vitamin_b12_mcg = COALESCE(vitamin_b12_mcg, 0), "
+                "calcium_mg = COALESCE(calcium_mg, 0), "
+                "iron_mg = COALESCE(iron_mg, 0), "
+                "potassium_mg = COALESCE(potassium_mg, 0)"
+            )
+        )
+
+        me_info = await conn.execute(text("PRAGMA table_info(meal_entries)"))
+        me_cols = {row[1] for row in me_info.fetchall()}
+        if "vitamin_a_mcg" not in me_cols:
+            await conn.execute(text("ALTER TABLE meal_entries ADD COLUMN vitamin_a_mcg REAL DEFAULT 0"))
+        if "vitamin_c_mg" not in me_cols:
+            await conn.execute(text("ALTER TABLE meal_entries ADD COLUMN vitamin_c_mg REAL DEFAULT 0"))
+        if "vitamin_d_mcg" not in me_cols:
+            await conn.execute(text("ALTER TABLE meal_entries ADD COLUMN vitamin_d_mcg REAL DEFAULT 0"))
+        if "vitamin_b12_mcg" not in me_cols:
+            await conn.execute(text("ALTER TABLE meal_entries ADD COLUMN vitamin_b12_mcg REAL DEFAULT 0"))
+        if "calcium_mg" not in me_cols:
+            await conn.execute(text("ALTER TABLE meal_entries ADD COLUMN calcium_mg REAL DEFAULT 0"))
+        if "iron_mg" not in me_cols:
+            await conn.execute(text("ALTER TABLE meal_entries ADD COLUMN iron_mg REAL DEFAULT 0"))
+        if "potassium_mg" not in me_cols:
+            await conn.execute(text("ALTER TABLE meal_entries ADD COLUMN potassium_mg REAL DEFAULT 0"))
 
     await seed_exercise_catalog()
     await seed_food_catalog()
@@ -269,14 +326,39 @@ async def seed_food_catalog() -> None:
         ("Protein Coffee",      "beverage",240, 160, 20.0, 10.0,  3.0),
         ("Electrolyte Drink",   "beverage",240,  20,  0.0,  5.0,  0.0),
     ]
+    category_micro_profiles = {
+        "protein": {"vitamin_a_mcg": 20.0, "vitamin_c_mg": 0.0, "vitamin_d_mcg": 0.8, "vitamin_b12_mcg": 0.9, "calcium_mg": 25.0, "iron_mg": 1.2, "potassium_mg": 320.0},
+        "grain": {"vitamin_a_mcg": 0.0, "vitamin_c_mg": 0.0, "vitamin_d_mcg": 0.0, "vitamin_b12_mcg": 0.0, "calcium_mg": 18.0, "iron_mg": 2.2, "potassium_mg": 160.0},
+        "fruit": {"vitamin_a_mcg": 35.0, "vitamin_c_mg": 28.0, "vitamin_d_mcg": 0.0, "vitamin_b12_mcg": 0.0, "calcium_mg": 20.0, "iron_mg": 0.3, "potassium_mg": 220.0},
+        "vegetable": {"vitamin_a_mcg": 230.0, "vitamin_c_mg": 38.0, "vitamin_d_mcg": 0.0, "vitamin_b12_mcg": 0.0, "calcium_mg": 55.0, "iron_mg": 1.4, "potassium_mg": 290.0},
+        "dairy": {"vitamin_a_mcg": 70.0, "vitamin_c_mg": 0.8, "vitamin_d_mcg": 1.2, "vitamin_b12_mcg": 0.6, "calcium_mg": 220.0, "iron_mg": 0.1, "potassium_mg": 170.0},
+        "fat": {"vitamin_a_mcg": 12.0, "vitamin_c_mg": 0.0, "vitamin_d_mcg": 0.0, "vitamin_b12_mcg": 0.0, "calcium_mg": 22.0, "iron_mg": 1.0, "potassium_mg": 210.0},
+        "snack": {"vitamin_a_mcg": 10.0, "vitamin_c_mg": 1.0, "vitamin_d_mcg": 0.1, "vitamin_b12_mcg": 0.2, "calcium_mg": 35.0, "iron_mg": 1.5, "potassium_mg": 170.0},
+        "beverage": {"vitamin_a_mcg": 6.0, "vitamin_c_mg": 7.0, "vitamin_d_mcg": 0.2, "vitamin_b12_mcg": 0.1, "calcium_mg": 22.0, "iron_mg": 0.1, "potassium_mg": 120.0},
+        "other": {"vitamin_a_mcg": 10.0, "vitamin_c_mg": 4.0, "vitamin_d_mcg": 0.1, "vitamin_b12_mcg": 0.2, "calcium_mg": 25.0, "iron_mg": 0.8, "potassium_mg": 160.0},
+    }
+
+    def micro_for_food(category: str, grams: float) -> dict[str, float]:
+        profile = category_micro_profiles.get(category, category_micro_profiles["other"])
+        factor = max(1.0, float(grams)) / 100.0
+        return {k: round(v * factor, 2) for k, v in profile.items()}
+
     async with AsyncSessionLocal() as session:
         # Clear and re-seed preset foods (preserves custom user foods)
         from sqlalchemy import delete
         await session.execute(delete(FoodItem).where(FoodItem.user_id.is_(None)))
         for name, cat, grams, cal, prot, carbs, fat in foods:
+            micro = micro_for_food(cat, grams)
             session.add(FoodItem(
                 name=name, category=cat, base_grams=float(grams), serving_desc=f"{int(grams)}g",
                 calories=cal, protein_g=prot, carbs_g=carbs, fat_g=fat,
+                vitamin_a_mcg=micro["vitamin_a_mcg"],
+                vitamin_c_mg=micro["vitamin_c_mg"],
+                vitamin_d_mcg=micro["vitamin_d_mcg"],
+                vitamin_b12_mcg=micro["vitamin_b12_mcg"],
+                calcium_mg=micro["calcium_mg"],
+                iron_mg=micro["iron_mg"],
+                potassium_mg=micro["potassium_mg"],
                 user_id=None,
             ))
         await session.commit()

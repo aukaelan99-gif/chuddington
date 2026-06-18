@@ -1,6 +1,6 @@
-# StudyWell
+# Chudlite
 
-StudyWell is a student wellness app that brings study planning, fitness, nutrition, and progress tracking into one place.
+Chudlite is a student wellness app that brings study planning, fitness, nutrition, and progress tracking into one place.
 
 ## What the Program Does
 

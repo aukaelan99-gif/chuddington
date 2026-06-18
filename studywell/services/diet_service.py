@@ -16,6 +16,13 @@ async def create_meal(db: AsyncSession, data: MealEntryCreate, today: date, user
         protein_g=data.protein_g,
         carbs_g=data.carbs_g,
         fat_g=data.fat_g,
+        vitamin_a_mcg=data.vitamin_a_mcg,
+        vitamin_c_mg=data.vitamin_c_mg,
+        vitamin_d_mcg=data.vitamin_d_mcg,
+        vitamin_b12_mcg=data.vitamin_b12_mcg,
+        calcium_mg=data.calcium_mg,
+        iron_mg=data.iron_mg,
+        potassium_mg=data.potassium_mg,
         date=today,
     )
     db.add(m)
@@ -41,6 +48,13 @@ async def update_meal(
     protein_g: float,
     carbs_g: float,
     fat_g: float,
+    vitamin_a_mcg: float | None,
+    vitamin_c_mg: float | None,
+    vitamin_d_mcg: float | None,
+    vitamin_b12_mcg: float | None,
+    calcium_mg: float | None,
+    iron_mg: float | None,
+    potassium_mg: float | None,
     meal_date: date,
 ) -> bool:
     meal = await db.get(MealEntry, meal_id)
@@ -53,6 +67,20 @@ async def update_meal(
     meal.protein_g = max(0.0, min(float(protein_g), 500.0))
     meal.carbs_g = max(0.0, min(float(carbs_g), 500.0))
     meal.fat_g = max(0.0, min(float(fat_g), 500.0))
+    if vitamin_a_mcg is not None:
+        meal.vitamin_a_mcg = max(0.0, min(float(vitamin_a_mcg), 50000.0))
+    if vitamin_c_mg is not None:
+        meal.vitamin_c_mg = max(0.0, min(float(vitamin_c_mg), 10000.0))
+    if vitamin_d_mcg is not None:
+        meal.vitamin_d_mcg = max(0.0, min(float(vitamin_d_mcg), 1000.0))
+    if vitamin_b12_mcg is not None:
+        meal.vitamin_b12_mcg = max(0.0, min(float(vitamin_b12_mcg), 1000.0))
+    if calcium_mg is not None:
+        meal.calcium_mg = max(0.0, min(float(calcium_mg), 10000.0))
+    if iron_mg is not None:
+        meal.iron_mg = max(0.0, min(float(iron_mg), 1000.0))
+    if potassium_mg is not None:
+        meal.potassium_mg = max(0.0, min(float(potassium_mg), 20000.0))
     meal.date = meal_date
 
     await db.commit()
@@ -124,11 +152,25 @@ async def get_macro_totals(db: AsyncSession, d: date, user_id: str) -> dict:
     carbs = sum(m.carbs_g or 0 for m in meals)
     fat = sum(m.fat_g or 0 for m in meals)
     calories = sum(m.calories for m in meals)
+    vitamin_a_mcg = sum(m.vitamin_a_mcg or 0 for m in meals)
+    vitamin_c_mg = sum(m.vitamin_c_mg or 0 for m in meals)
+    vitamin_d_mcg = sum(m.vitamin_d_mcg or 0 for m in meals)
+    vitamin_b12_mcg = sum(m.vitamin_b12_mcg or 0 for m in meals)
+    calcium_mg = sum(m.calcium_mg or 0 for m in meals)
+    iron_mg = sum(m.iron_mg or 0 for m in meals)
+    potassium_mg = sum(m.potassium_mg or 0 for m in meals)
     return {
         "protein": round(protein, 1),
         "carbs": round(carbs, 1),
         "fat": round(fat, 1),
         "calories": calories,
+        "vitamin_a_mcg": round(vitamin_a_mcg, 1),
+        "vitamin_c_mg": round(vitamin_c_mg, 1),
+        "vitamin_d_mcg": round(vitamin_d_mcg, 2),
+        "vitamin_b12_mcg": round(vitamin_b12_mcg, 2),
+        "calcium_mg": round(calcium_mg, 1),
+        "iron_mg": round(iron_mg, 2),
+        "potassium_mg": round(potassium_mg, 1),
     }
 
 
@@ -154,6 +196,13 @@ async def search_food_items(db: AsyncSession, q: str, user_id: str, category: st
             "protein_g": r.protein_g,
             "carbs_g": r.carbs_g,
             "fat_g": r.fat_g,
+            "vitamin_a_mcg": r.vitamin_a_mcg,
+            "vitamin_c_mg": r.vitamin_c_mg,
+            "vitamin_d_mcg": r.vitamin_d_mcg,
+            "vitamin_b12_mcg": r.vitamin_b12_mcg,
+            "calcium_mg": r.calcium_mg,
+            "iron_mg": r.iron_mg,
+            "potassium_mg": r.potassium_mg,
             "is_custom": r.user_id is not None,
         }
         for r in rows
@@ -169,11 +218,25 @@ async def create_custom_food(
     protein_g: float,
     carbs_g: float,
     fat_g: float,
+    vitamin_a_mcg: float,
+    vitamin_c_mg: float,
+    vitamin_d_mcg: float,
+    vitamin_b12_mcg: float,
+    calcium_mg: float,
+    iron_mg: float,
+    potassium_mg: float,
 ) -> FoodItem:
     grams = max(1.0, float(base_grams))
     protein_g = max(0.0, float(protein_g))
     carbs_g = max(0.0, float(carbs_g))
     fat_g = max(0.0, float(fat_g))
+    vitamin_a_mcg = max(0.0, float(vitamin_a_mcg))
+    vitamin_c_mg = max(0.0, float(vitamin_c_mg))
+    vitamin_d_mcg = max(0.0, float(vitamin_d_mcg))
+    vitamin_b12_mcg = max(0.0, float(vitamin_b12_mcg))
+    calcium_mg = max(0.0, float(calcium_mg))
+    iron_mg = max(0.0, float(iron_mg))
+    potassium_mg = max(0.0, float(potassium_mg))
     calories = int(round(protein_g * 4 + carbs_g * 4 + fat_g * 9))
     item = FoodItem(
         id=str(uuid.uuid4()),
@@ -186,6 +249,13 @@ async def create_custom_food(
         protein_g=protein_g,
         carbs_g=carbs_g,
         fat_g=fat_g,
+        vitamin_a_mcg=vitamin_a_mcg,
+        vitamin_c_mg=vitamin_c_mg,
+        vitamin_d_mcg=vitamin_d_mcg,
+        vitamin_b12_mcg=vitamin_b12_mcg,
+        calcium_mg=calcium_mg,
+        iron_mg=iron_mg,
+        potassium_mg=potassium_mg,
     )
     db.add(item)
     await db.commit()
@@ -209,6 +279,13 @@ async def update_custom_food(
     protein_g: float,
     carbs_g: float,
     fat_g: float,
+    vitamin_a_mcg: float,
+    vitamin_c_mg: float,
+    vitamin_d_mcg: float,
+    vitamin_b12_mcg: float,
+    calcium_mg: float,
+    iron_mg: float,
+    potassium_mg: float,
 ) -> None:
     item = await db.get(FoodItem, food_id)
     if not item or item.user_id != user_id:
@@ -217,6 +294,13 @@ async def update_custom_food(
     protein_g = max(0.0, float(protein_g))
     carbs_g = max(0.0, float(carbs_g))
     fat_g = max(0.0, float(fat_g))
+    vitamin_a_mcg = max(0.0, float(vitamin_a_mcg))
+    vitamin_c_mg = max(0.0, float(vitamin_c_mg))
+    vitamin_d_mcg = max(0.0, float(vitamin_d_mcg))
+    vitamin_b12_mcg = max(0.0, float(vitamin_b12_mcg))
+    calcium_mg = max(0.0, float(calcium_mg))
+    iron_mg = max(0.0, float(iron_mg))
+    potassium_mg = max(0.0, float(potassium_mg))
     calories = int(round(protein_g * 4 + carbs_g * 4 + fat_g * 9))
     item.name = name.strip()
     item.category = (category or "other").strip().lower()
@@ -226,6 +310,13 @@ async def update_custom_food(
     item.protein_g = protein_g
     item.carbs_g = carbs_g
     item.fat_g = fat_g
+    item.vitamin_a_mcg = vitamin_a_mcg
+    item.vitamin_c_mg = vitamin_c_mg
+    item.vitamin_d_mcg = vitamin_d_mcg
+    item.vitamin_b12_mcg = vitamin_b12_mcg
+    item.calcium_mg = calcium_mg
+    item.iron_mg = iron_mg
+    item.potassium_mg = potassium_mg
     await db.commit()
 
 
@@ -236,7 +327,7 @@ async def delete_custom_food(db: AsyncSession, food_id: str, user_id: str) -> No
         await db.commit()
 
 
-def _compute_scaled_macros(base_grams: float, grams: float, calories: int, protein: float, carbs: float, fat: float) -> dict:
+def _compute_scaled_nutrition(base_grams: float, grams: float, calories: int, protein: float, carbs: float, fat: float, vitamin_a_mcg: float, vitamin_c_mg: float, vitamin_d_mcg: float, vitamin_b12_mcg: float, calcium_mg: float, iron_mg: float, potassium_mg: float) -> dict:
     safe_base = max(1.0, float(base_grams))
     factor = max(0.0, float(grams)) / safe_base
     return {
@@ -244,17 +335,31 @@ def _compute_scaled_macros(base_grams: float, grams: float, calories: int, prote
         "protein_g": round(float(protein) * factor, 1),
         "carbs_g": round(float(carbs) * factor, 1),
         "fat_g": round(float(fat) * factor, 1),
+        "vitamin_a_mcg": round(float(vitamin_a_mcg) * factor, 1),
+        "vitamin_c_mg": round(float(vitamin_c_mg) * factor, 1),
+        "vitamin_d_mcg": round(float(vitamin_d_mcg) * factor, 2),
+        "vitamin_b12_mcg": round(float(vitamin_b12_mcg) * factor, 2),
+        "calcium_mg": round(float(calcium_mg) * factor, 1),
+        "iron_mg": round(float(iron_mg) * factor, 2),
+        "potassium_mg": round(float(potassium_mg) * factor, 1),
     }
 
 
 def _item_from_snapshot(item: SavedMealItem) -> dict:
-    scaled = _compute_scaled_macros(
+    scaled = _compute_scaled_nutrition(
         item.base_grams_snapshot,
         item.grams,
         item.calories_snapshot,
         item.protein_snapshot,
         item.carbs_snapshot,
         item.fat_snapshot,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
     )
     return {
         "saved_item_id": item.id,
@@ -271,18 +376,32 @@ def _item_from_snapshot(item: SavedMealItem) -> dict:
         "protein_g": scaled["protein_g"],
         "carbs_g": scaled["carbs_g"],
         "fat_g": scaled["fat_g"],
+        "vitamin_a_mcg": scaled["vitamin_a_mcg"],
+        "vitamin_c_mg": scaled["vitamin_c_mg"],
+        "vitamin_d_mcg": scaled["vitamin_d_mcg"],
+        "vitamin_b12_mcg": scaled["vitamin_b12_mcg"],
+        "calcium_mg": scaled["calcium_mg"],
+        "iron_mg": scaled["iron_mg"],
+        "potassium_mg": scaled["potassium_mg"],
         "is_stale": True,
     }
 
 
 def _item_from_food(item: SavedMealItem, food: FoodItem) -> dict:
-    scaled = _compute_scaled_macros(
+    scaled = _compute_scaled_nutrition(
         food.base_grams,
         item.grams,
         food.calories,
         food.protein_g,
         food.carbs_g,
         food.fat_g,
+        food.vitamin_a_mcg,
+        food.vitamin_c_mg,
+        food.vitamin_d_mcg,
+        food.vitamin_b12_mcg,
+        food.calcium_mg,
+        food.iron_mg,
+        food.potassium_mg,
     )
     return {
         "saved_item_id": item.id,
@@ -294,11 +413,25 @@ def _item_from_food(item: SavedMealItem, food: FoodItem) -> dict:
         "base_protein_g": food.protein_g,
         "base_carbs_g": food.carbs_g,
         "base_fat_g": food.fat_g,
+        "base_vitamin_a_mcg": food.vitamin_a_mcg,
+        "base_vitamin_c_mg": food.vitamin_c_mg,
+        "base_vitamin_d_mcg": food.vitamin_d_mcg,
+        "base_vitamin_b12_mcg": food.vitamin_b12_mcg,
+        "base_calcium_mg": food.calcium_mg,
+        "base_iron_mg": food.iron_mg,
+        "base_potassium_mg": food.potassium_mg,
         "grams": item.grams,
         "calories": scaled["calories"],
         "protein_g": scaled["protein_g"],
         "carbs_g": scaled["carbs_g"],
         "fat_g": scaled["fat_g"],
+        "vitamin_a_mcg": scaled["vitamin_a_mcg"],
+        "vitamin_c_mg": scaled["vitamin_c_mg"],
+        "vitamin_d_mcg": scaled["vitamin_d_mcg"],
+        "vitamin_b12_mcg": scaled["vitamin_b12_mcg"],
+        "calcium_mg": scaled["calcium_mg"],
+        "iron_mg": scaled["iron_mg"],
+        "potassium_mg": scaled["potassium_mg"],
         "is_stale": False,
     }
 
@@ -325,6 +458,13 @@ async def _resolve_saved_meal(db: AsyncSession, meal: SavedMeal) -> dict:
         "protein_g": round(sum(x["protein_g"] for x in items), 1),
         "carbs_g": round(sum(x["carbs_g"] for x in items), 1),
         "fat_g": round(sum(x["fat_g"] for x in items), 1),
+        "vitamin_a_mcg": round(sum(x["vitamin_a_mcg"] for x in items), 1),
+        "vitamin_c_mg": round(sum(x["vitamin_c_mg"] for x in items), 1),
+        "vitamin_d_mcg": round(sum(x["vitamin_d_mcg"] for x in items), 2),
+        "vitamin_b12_mcg": round(sum(x["vitamin_b12_mcg"] for x in items), 2),
+        "calcium_mg": round(sum(x["calcium_mg"] for x in items), 1),
+        "iron_mg": round(sum(x["iron_mg"] for x in items), 2),
+        "potassium_mg": round(sum(x["potassium_mg"] for x in items), 1),
     }
     return {
         "id": meal.id,
@@ -431,6 +571,13 @@ async def apply_saved_meal_to_today(
         protein_g=totals["protein_g"],
         carbs_g=totals["carbs_g"],
         fat_g=totals["fat_g"],
+        vitamin_a_mcg=totals["vitamin_a_mcg"],
+        vitamin_c_mg=totals["vitamin_c_mg"],
+        vitamin_d_mcg=totals["vitamin_d_mcg"],
+        vitamin_b12_mcg=totals["vitamin_b12_mcg"],
+        calcium_mg=totals["calcium_mg"],
+        iron_mg=totals["iron_mg"],
+        potassium_mg=totals["potassium_mg"],
         date=date.today(),
     )
     db.add(meal)
