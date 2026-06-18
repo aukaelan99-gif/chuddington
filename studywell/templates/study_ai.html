@@ -118,25 +118,18 @@
   }
 
   function introText() {
-    return 'Hey, I am Chulk, your study buddy. Let us pick your curriculum, subject, and mode, then press Start together. If you choose Bot as Student, you teach me and I will cheer you on while gently checking your explanation. If you choose Bot as Teacher, I will break things down step by step like a friend helping you revise.';
+    return 'Hey, I am Chulk, your study buddy. Choose your curriculum, subject, and mode, then press Start. In Bot as Student mode, tell me what you want to teach me first. In Bot as Teacher mode, tell me what you want me to teach you first.';
   }
 
   function modeLabel(mode) {
     return mode === 'teacher' ? 'Bot as Teacher' : 'Bot as Student';
   }
 
-  function kickoffPrompt(mode) {
-    if (mode === 'teacher') {
-      return 'We just started teacher mode. Give a friendly opening, ask what specific subtopic the student wants, and propose a concise first learning step.';
-    }
-    return 'We just started student mode. Give a friendly opening and ask the student to explain one specific part in their own words so you can check correctness.';
-  }
-
   function modeSwitchPrompt(mode) {
     if (mode === 'teacher') {
-      return 'Mode changed to teacher. Briefly acknowledge the switch and teach with a short structured explanation of the requested topic, then ask a check question.';
+      return 'Mode changed to teacher. Briefly acknowledge the switch, ask what the student wants you to teach first, then teach with a short structured explanation and ask a check question.';
     }
-    return 'Mode changed to student. Briefly acknowledge the switch and ask the user to explain a specific concept in their own words so you can evaluate accuracy.';
+    return 'Mode changed to student. Briefly acknowledge the switch, ask what the user wants to teach you first, then invite them to explain it in their own words so you can evaluate accuracy.';
   }
 
   function createInstance() {
@@ -477,8 +470,8 @@
     sendBtn.disabled = !unlocked;
     input.placeholder = unlocked
       ? (inst.mode === 'teacher'
-          ? `Ask me to teach a specific part in ${inst.topic} (e.g. determinants of demand).`
-          : `Explain a specific part in ${inst.topic} in your own words, and I will check correctness.`)
+          ? `Tell me what you want me to teach first in ${inst.topic} (e.g. determinants of demand).`
+          : `Tell me what you want to teach me first in ${inst.topic}, then explain it in your own words.`)
       : 'Click Start after choosing curriculum and subject.';
   }
 
@@ -723,16 +716,14 @@
     input.focus();
     saveState();
 
-    const thinking = appendThinkingBubble();
     try {
       await resetServerSession(inst);
-      const data = await requestBotMessage(inst, kickoffPrompt(inst.mode), true);
-      if (thinking.parentNode) thinking.parentNode.removeChild(thinking);
-      inst.messages.push({ role: 'assistant', kind: 'result', data });
+      inst.messages.push({ role: 'assistant', kind: 'text', text: inst.mode === 'teacher'
+        ? `What do you want me to teach you first in ${inst.topic}?`
+        : `What do you want to teach me first in ${inst.topic}?` });
       renderChatMessages();
       saveState();
     } catch (_err) {
-      if (thinking.parentNode) thinking.parentNode.removeChild(thinking);
       inst.messages.push({ role: 'assistant', kind: 'error', text: 'Could not start this session. Please try Start again.' });
       renderChatMessages();
       saveState();
@@ -829,15 +820,11 @@
   });
 
   clearBtn.addEventListener('click', () => {
-    const inst = getActive();
-    if (!inst) return;
-    inst.curriculum = '';
-    inst.subject = '';
-    inst.ibLevel = '';
-    inst.mode = 'listen';
-    inst.topic = '';
-    inst.draftInput = '';
-    inst.messages = [{ role: 'assistant', kind: 'text', text: introText() }];
+    // Full reset: clear all tabs and remove persisted browser state for this user.
+    instances.length = 0;
+    activeInstanceId = '';
+    editingInstanceId = '';
+    chatCounter = 1;
 
     curriculum.value = '';
     subject.value = '';
@@ -848,10 +835,14 @@
     setSubjectOptions([], '');
     sourceNote.textContent = 'Subjects are loaded from official curriculum lists.';
     input.value = '';
-    renderTabs();
-    renderChatMessages();
-    updateInputLock();
-    saveState();
+
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (_err) {
+      // Ignore storage errors; UI reset still proceeds.
+    }
+
+    addInstance();
   });
 
   if (loadState()) {

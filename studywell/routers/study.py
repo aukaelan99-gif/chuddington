@@ -16,6 +16,14 @@ from auth_deps import get_current_user, User
 
 router = APIRouter()
 
+
+async def _build_study_chart_data(db: AsyncSession, user_id: str) -> dict[str, list[float] | list[str]]:
+    today = date.today()
+    weekly_minutes = await study_service.get_daily_minutes_last_7(db, user_id)
+    weekly_hours = [round(m / 60, 2) for m in weekly_minutes]
+    labels = [(today - timedelta(days=i)).strftime("%a") for i in range(6, -1, -1)]
+    return {"labels": labels, "weekly_hours": weekly_hours}
+
 @router.get("/", response_class=HTMLResponse)
 async def study_page(
     request: Request,
@@ -24,20 +32,26 @@ async def study_page(
 ):
     today = date.today()
     sessions = await study_service.get_sessions_by_date(db, today, user.id)
-    weekly_minutes = await study_service.get_daily_minutes_last_7(db, user.id)
-    weekly_hours = [round(m / 60, 2) for m in weekly_minutes]
-    labels = [(today - timedelta(days=i)).strftime("%a") for i in range(6, -1, -1)]
+    chart_data = await _build_study_chart_data(db, user.id)
     return templates.TemplateResponse(
         request,
         "study.html",
         {
             "sessions": sessions,
             "today": today,
-            "weekly_hours": weekly_hours,
-            "labels": labels,
+            "weekly_hours": chart_data["weekly_hours"],
+            "labels": chart_data["labels"],
             "username": user.username,
         },
     )
+
+
+@router.get("/chart-data")
+async def study_chart_data(
+    db: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    return JSONResponse(await _build_study_chart_data(db, user.id))
 
 
 @router.get("/ai", response_class=HTMLResponse)
@@ -68,9 +82,11 @@ async def add_session(
 ):
     data = StudySessionCreate(subject=subject, duration_minutes=duration_minutes, notes=notes)
     session = await study_service.create_session(db, data, date.today(), user.id)
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         request, "partials/study_row.html", {"session": session}
     )
+    response.headers["HX-Trigger"] = "study-session-added"
+    return response
 
 
 @router.post("/teach/create-session")

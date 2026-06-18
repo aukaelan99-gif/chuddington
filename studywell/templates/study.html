@@ -17,11 +17,11 @@
 <!-- Log form -->
 <div class="bg-white rounded-xl shadow p-6 mb-6">
   <div class="font-semibold mb-4">Log a Study Session</div>
-  <form id="study-form"
-        hx-post="/study/add"
-        hx-target="#session-list"
-        hx-swap="afterbegin"
-        class="flex flex-col gap-3">
+    <form id="study-form"
+      hx-post="/study/add"
+      hx-target="#session-list"
+      hx-swap="afterbegin"
+      class="flex flex-col gap-3">
     <input type="hidden" id="pomodoro-duration" name="duration_minutes" value="25" />
     <div class="flex gap-3">
       <input type="text" name="subject" placeholder="Subject" required maxlength="50"
@@ -119,7 +119,7 @@
 })();
 
 // ── Study Chart ─────────────────────────────────────────────────
-new Chart(document.getElementById('studyChart'), {
+const studyChart = new Chart(document.getElementById('studyChart'), {
   type: 'bar',
   data: {
     labels: {{ labels | tojson }},
@@ -131,6 +131,25 @@ new Chart(document.getElementById('studyChart'), {
     }]
   },
   options: { responsive: true, scales: { y: { beginAtZero: true, title: { display: true, text: 'Hours' } } } }
+});
+
+async function refreshStudyChart() {
+  try {
+    const res = await fetch('/study/chart-data');
+    if (!res.ok) return;
+    const data = await res.json();
+    studyChart.data.labels = data.labels || [];
+    studyChart.data.datasets[0].data = data.weekly_hours || [];
+    studyChart.update();
+  } catch (_err) {
+    // Keep the form usable even if the chart refresh fails.
+  }
+}
+
+document.getElementById('study-form').addEventListener('htmx:afterRequest', (event) => {
+  if (event.detail && event.detail.successful) {
+    refreshStudyChart();
+  }
 });
 
 </script>

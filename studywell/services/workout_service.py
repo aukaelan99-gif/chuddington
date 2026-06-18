@@ -97,6 +97,7 @@ async def add_set(
     reps: int | None,
     weight_kg: float | None,
     duration_minutes: float | None,
+    distance_km: float | None = None,
 ) -> WorkoutSet:
     s = WorkoutSet(
         id=str(uuid.uuid4()),
@@ -105,6 +106,7 @@ async def add_set(
         reps=reps,
         weight_kg=weight_kg,
         duration_minutes=duration_minutes,
+        distance_km=distance_km,
     )
     db.add(s)
     await db.commit()
@@ -132,6 +134,7 @@ async def create_planned_set(db: AsyncSession, ex_id: str) -> WorkoutSet | None:
         reps=None,
         weight_kg=None,
         duration_minutes=None,
+        distance_km=None,
     )
     db.add(s)
     await db.commit()
@@ -145,6 +148,7 @@ async def update_set(
     reps: int | None,
     weight_kg: float | None,
     duration_minutes: float | None,
+    distance_km: float | None = None,
 ) -> WorkoutSet | None:
     s = await db.get(WorkoutSet, set_id)
     if not s:
@@ -152,6 +156,7 @@ async def update_set(
     s.reps = reps
     s.weight_kg = weight_kg
     s.duration_minutes = duration_minutes
+    s.distance_km = distance_km
     await db.commit()
     await db.refresh(s)
     return s
@@ -211,6 +216,8 @@ async def finalize_workout_with_sets(
         for i, row in enumerate(ex_data.get("sets", []), start=1):
             reps = row.get("reps")
             weight_kg = row.get("weight_kg")
+            duration_minutes = row.get("duration_minutes")
+            distance_km = row.get("distance_km")
 
             reps_val = None
             if reps not in (None, ""):
@@ -230,6 +237,28 @@ async def finalize_workout_with_sets(
             if weight_val is not None and not (0 <= weight_val <= 500):
                 weight_val = None
 
+            duration_val = None
+            if duration_minutes not in (None, ""):
+                try:
+                    duration_val = float(duration_minutes)
+                except (TypeError, ValueError):
+                    duration_val = None
+            if duration_val is not None and not (0 <= duration_val <= 600):
+                duration_val = None
+
+            distance_val = None
+            if distance_km not in (None, ""):
+                try:
+                    distance_val = float(distance_km)
+                except (TypeError, ValueError):
+                    distance_val = None
+            if distance_val is not None and not (0 <= distance_val <= 200):
+                distance_val = None
+
+            if ex.exercise_type == ExerciseType.cardio:
+                reps_val = None
+                weight_val = None
+
             db.add(
                 WorkoutSet(
                     id=str(uuid.uuid4()),
@@ -237,7 +266,8 @@ async def finalize_workout_with_sets(
                     set_number=i,
                     reps=reps_val,
                     weight_kg=weight_val,
-                    duration_minutes=None,
+                    duration_minutes=duration_val if ex.exercise_type == ExerciseType.cardio else None,
+                    distance_km=distance_val if ex.exercise_type == ExerciseType.cardio else None,
                 )
             )
             total_sets += 1

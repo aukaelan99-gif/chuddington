@@ -196,6 +196,7 @@ class WorkoutSet(Base):
     reps:             Mapped[int | None]  = mapped_column(Integer, nullable=True)
     weight_kg:        Mapped[float | None] = mapped_column(Float,  nullable=True)
     duration_minutes: Mapped[float | None] = mapped_column(Float,  nullable=True)
+    distance_km:      Mapped[float | None] = mapped_column(Float,  nullable=True)
     exercise:         Mapped["WorkoutExercise"] = relationship(back_populates="sets")
 
 

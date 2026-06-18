@@ -27,6 +27,46 @@
   </form>
 </div>
 
+<!-- Custom exercise creator -->
+<div class="bg-white rounded-xl shadow p-5 mb-5">
+  <div class="font-semibold mb-2">Create Custom Exercise</div>
+  <p class="text-xs text-gray-500 mb-3">Add an exercise to the search database so it can be used in future workouts.</p>
+  <form action="/exercise/custom" method="post" class="grid gap-3">
+    <div class="grid grid-cols-1 md:grid-cols-[1.3fr_0.8fr_0.8fr] gap-2">
+      <input type="text" name="name" placeholder="Exercise name" required maxlength="100"
+             class="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+      <select name="exercise_type" class="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+        <option value="weighted">Weighted</option>
+        <option value="bodyweight">Bodyweight</option>
+        <option value="cardio">Cardio</option>
+      </select>
+      <select name="muscle_group" class="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+        <option value="other">Other</option>
+        <option value="chest">Chest</option>
+        <option value="back">Back</option>
+        <option value="shoulders">Shoulders</option>
+        <option value="biceps">Biceps</option>
+        <option value="triceps">Triceps</option>
+        <option value="quads">Quads</option>
+        <option value="hamstrings">Hamstrings</option>
+        <option value="glutes">Glutes</option>
+        <option value="core">Core</option>
+        <option value="full_body">Full Body</option>
+        <option value="cardio">Cardio</option>
+        <option value="calves">Calves</option>
+        <option value="forearms">Forearms</option>
+      </select>
+    </div>
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <p class="text-xs text-gray-500">Weighted and bodyweight exercises work best in workouts, but cardio entries are supported too.</p>
+      <button type="submit"
+              class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold text-sm whitespace-nowrap">
+        Save Custom Exercise
+      </button>
+    </div>
+  </form>
+</div>
+
 <!-- Stats strip -->
 <div class="grid grid-cols-2 gap-4 mb-5">
   <div class="bg-white rounded-xl shadow p-4 text-center">

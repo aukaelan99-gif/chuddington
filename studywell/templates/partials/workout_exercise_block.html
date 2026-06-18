@@ -21,15 +21,25 @@
   <table class="w-full text-sm mb-3 table-fixed">
     <colgroup>
       <col class="w-16" />
+      {% if is_cardio %}
+      <col class="w-28" />
+      <col class="w-28" />
+      {% else %}
       <col class="w-28" />
       {% if is_weighted or is_bodyweight %}<col class="w-32" />{% endif %}
+      {% endif %}
       <col />
     </colgroup>
     <thead>
       <tr class="text-left text-gray-400 border-b text-xs uppercase">
         <th class="pb-1">Set</th>
+        {% if is_cardio %}
+        <th class="pb-1">Duration</th>
+        <th class="pb-1">Distance</th>
+        {% else %}
         <th class="pb-1">Reps</th>
         {% if is_weighted or is_bodyweight %}<th class="pb-1">Weight</th>{% endif %}
+        {% endif %}
         <th class="pb-1 text-right">Actions</th>
       </tr>
     </thead>

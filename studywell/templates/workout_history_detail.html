@@ -21,16 +21,26 @@
       <thead>
         <tr class="text-left text-gray-400 border-b text-xs uppercase">
           <th class="pb-1">Set</th>
+          {% if ex.exercise_type.value == 'cardio' %}
+          <th class="pb-1">Duration</th>
+          <th class="pb-1">Distance</th>
+          {% else %}
           <th class="pb-1">Reps</th>
           <th class="pb-1">Weight</th>
+          {% endif %}
         </tr>
       </thead>
       <tbody>
         {% for s in ex.sets %}
         <tr class="border-b last:border-b-0">
           <td class="py-1.5 text-gray-500">{{ s.set_number }}</td>
+          {% if ex.exercise_type.value == 'cardio' %}
+          <td class="py-1.5">{{ s.duration_minutes if s.duration_minutes is not none else "—" }} min</td>
+          <td class="py-1.5">{{ s.distance_km if s.distance_km is not none else "—" }} km</td>
+          {% else %}
           <td class="py-1.5">{{ s.reps if s.reps is not none else "—" }}</td>
           <td class="py-1.5">{{ s.weight_kg if s.weight_kg is not none else "—" }}</td>
+          {% endif %}
         </tr>
         {% endfor %}
       </tbody>

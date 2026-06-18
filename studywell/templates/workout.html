@@ -142,18 +142,26 @@ function addPlannedSet(exId, exType) {
   row.setAttribute('data-set-row', '1');
   row.className = 'border-b hover:bg-gray-50 text-sm';
 
-  const repsCell = exType !== 'cardio'
-    ? `<input type="number" data-reps min="1" max="200" placeholder="Reps" class="w-20 border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />`
-    : `<input type="number" data-reps min="1" max="200" placeholder="Reps" class="w-20 border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />`;
-
   const hasWeight = (exType === 'weighted' || exType === 'bodyweight');
+  const cardioCells = exType === 'cardio'
+    ? `
+      <td class="py-1.5"><input type="number" data-duration min="0" max="600" step="0.1" placeholder="Minutes" class="w-24 border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" /></td>
+      <td class="py-1.5"><input type="number" data-distance min="0" max="200" step="0.1" placeholder="km" class="w-24 border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" /></td>
+    `
+    : ``;
+
+  const repsCell = exType !== 'cardio'
+    ? `<td class="py-1.5"><input type="number" data-reps min="1" max="200" placeholder="Reps" class="w-20 border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" /></td>`
+    : ``;
+
   const weightCell = hasWeight
     ? `<input type="number" data-weight step="0.5" min="0" max="500" placeholder="${exType === 'bodyweight' ? 'Added weight' : 'Weight'}" class="w-28 border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />`
     : ``;
 
   row.innerHTML = `
     <td class="py-1.5 text-gray-500 align-middle" data-set-number></td>
-    <td class="py-1.5">${repsCell}</td>
+    ${repsCell}
+    ${cardioCells}
     ${hasWeight ? `<td class="py-1.5">${weightCell}</td>` : ``}
     <td class="py-1.5 text-right">
       <button type="button" class="px-2.5 py-1 bg-rose-100 text-rose-700 rounded-lg hover:bg-rose-200 text-xs font-semibold"
@@ -175,10 +183,14 @@ function prepareFinish(evt) {
     rows.forEach((row, idx) => {
       const repsEl = row.querySelector('[data-reps]');
       const weightEl = row.querySelector('[data-weight]');
+      const durationEl = row.querySelector('[data-duration]');
+      const distanceEl = row.querySelector('[data-distance]');
       sets.push({
         set_number: idx + 1,
-        reps: repsEl ? repsEl.value : null,
+        reps: exType === 'cardio' ? null : (repsEl ? repsEl.value : null),
         weight_kg: ((exType === 'weighted' || exType === 'bodyweight') && weightEl) ? weightEl.value : null,
+        duration_minutes: exType === 'cardio' && durationEl ? durationEl.value : null,
+        distance_km: exType === 'cardio' && distanceEl ? distanceEl.value : null,
       });
       totalSets += 1;
     });

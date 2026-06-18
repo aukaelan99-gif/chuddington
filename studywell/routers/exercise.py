@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import date
 
 from database import get_session
-from models import DailyGoals
+from models import DailyGoals, ExerciseCatalog, ExerciseType, MuscleGroup
 from services import workout_service
 from templates_config import templates
 from auth_deps import get_current_user, User
@@ -58,6 +58,36 @@ async def update_exercise_goal(
         import uuid
         goals = DailyGoals(id=str(uuid.uuid4()), user_id=user.id, exercise_minutes=value)
         db.add(goals)
+    await db.commit()
+    return RedirectResponse(url="/exercise", status_code=303)
+
+
+@router.post("/custom")
+async def add_custom_exercise(
+    name: str = Form(...),
+    exercise_type: ExerciseType = Form(...),
+    muscle_group: MuscleGroup = Form(MuscleGroup.other),
+    db: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    _ = user
+    clean_name = (name or "").strip()[:100]
+    if not clean_name:
+        return RedirectResponse(url="/exercise", status_code=303)
+
+    r = await db.execute(select(ExerciseCatalog).where(ExerciseCatalog.name == clean_name))
+    ex = r.scalar_one_or_none()
+    if ex:
+        ex.exercise_type = exercise_type
+        ex.muscle_group = muscle_group
+    else:
+        db.add(
+            ExerciseCatalog(
+                name=clean_name,
+                exercise_type=exercise_type,
+                muscle_group=muscle_group,
+            )
+        )
     await db.commit()
     return RedirectResponse(url="/exercise", status_code=303)
 

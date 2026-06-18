@@ -49,3 +49,4 @@ class AddSetForm(BaseModel):
     reps: int | None = Field(default=None, ge=1, le=999)
     weight_kg: float | None = Field(default=None, ge=0, le=1000)
     duration_minutes: float | None = Field(default=None, ge=0, le=600)
+    distance_km: float | None = Field(default=None, ge=0, le=200)
