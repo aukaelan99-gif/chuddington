@@ -321,7 +321,7 @@ async def delete_custom_food(
 
 @router.post("/saved-meals/create")
 async def create_saved_meal_template(
-    name: str = Form(...),
+    name: str = Form(""),
     meal_type: MealType = Form(...),
     items_json: str = Form("[]"),
     db: AsyncSession = Depends(get_session),
@@ -335,8 +335,28 @@ async def create_saved_meal_template(
     if not isinstance(items, list):
         items = []
 
-    await diet_service.create_saved_meal_template(db, user.id, name, meal_type, items)
-    return JSONResponse({"ok": True})
+    resolved_name = name.strip() or f"{meal_type.value.capitalize()} Meal"
+    saved = await diet_service.create_saved_meal_template(db, user.id, resolved_name, meal_type, items)
+    if not saved:
+        return JSONResponse({"ok": False, "error": "invalid_payload"}, status_code=400)
+
+    total_calories = 0
+    for raw in items:
+        try:
+            base = max(1.0, float(raw.get("base_grams") or 100.0))
+            grams = max(0.0, float(raw.get("grams") or 0.0))
+            cals = max(0.0, float(raw.get("calories") or 0.0))
+            total_calories += round(cals * (grams / base))
+        except (TypeError, ValueError):
+            continue
+
+    return JSONResponse({
+        "ok": True,
+        "id": saved.id,
+        "name": saved.name,
+        "meal_type": saved.meal_type.value,
+        "calories": int(total_calories),
+    })
 
 
 @router.get("/saved-meals/{template_id}/json")
@@ -536,7 +556,7 @@ async def update_micro_goal(
 @router.post("/add", response_class=HTMLResponse)
 async def add_meal(
     request: Request,
-    name: str = Form(...),
+    name: str = Form(""),
     meal_type: MealType = Form(...),
     calories: int = Form(...),
     protein_g: float = Form(0.0),
@@ -553,9 +573,7 @@ async def add_meal(
     db: AsyncSession = Depends(get_session),
     user: User = Depends(get_current_user),
 ):
-    clean_name = name.strip()
-    if not clean_name:
-        return HTMLResponse(content="", status_code=204)
+    clean_name = name.strip() or f"{meal_type.value.capitalize()} Meal"
 
     try:
         items = json.loads(items_json)

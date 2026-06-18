@@ -130,7 +130,7 @@
       <select id="saved-meal-template-select" class="flex-1 min-w-0 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
         <option value="">Select saved meal...</option>
         {% for sm in saved_meal_templates %}
-        <option value="{{ sm.id }}">{{ sm.name }} ({{ sm.meal_type.value|capitalize }} · {{ sm.totals.calories }} kcal)</option>
+        <option value="{{ sm.id }}" data-name="{{ sm.name }}" data-meal-type="{{ sm.meal_type.value }}" data-calories="{{ sm.totals.calories }}">{{ sm.name }} ({{ sm.meal_type.value|capitalize }} · {{ sm.totals.calories }} kcal)</option>
         {% endfor %}
       </select>
       <button type="button" id="load-saved-meal-btn" class="px-4 py-2 bg-orange-100 text-orange-700 border border-orange-200 rounded-lg hover:bg-orange-200 text-sm font-medium">Load Into Builder</button>
@@ -145,7 +145,7 @@
         id="meal-form"
         class="flex flex-col gap-3">
     <div class="flex gap-2 flex-wrap">
-      <input type="text" name="name" id="meal-name" placeholder="Meal name (e.g. Lunch Bowl)" required maxlength="100"
+      <input type="text" name="name" id="meal-name" placeholder="Meal name (optional)" maxlength="100"
              class="flex-1 min-w-0 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
       <select name="meal_type" required
               class="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
@@ -633,6 +633,24 @@ function getBuilderSnapshot() {
   };
 }
 
+function capitalizeText(v) {
+  const s = String(v || '').trim();
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+}
+
+function deriveMealName(explicitName, mealType, selectEl) {
+  const clean = (explicitName || '').trim();
+  if (clean) return clean;
+  const opt = selectEl ? selectEl.options[selectEl.selectedIndex] : null;
+  const fromSelected = (opt?.dataset?.name || '').trim();
+  if (fromSelected) return fromSelected;
+  return `${capitalizeText(mealType)} Meal`;
+}
+
+function computeSnapshotCalories(items) {
+  return Math.round((items || []).reduce((acc, item) => acc + computeItem(item).calories, 0));
+}
+
 function bindSavedMealTemplateActions() {
   const saveBtn = document.getElementById('save-meal-template-btn');
   const loadBtn = document.getElementById('load-saved-meal-btn');
@@ -642,17 +660,15 @@ function bindSavedMealTemplateActions() {
   if (saveBtn) {
     saveBtn.addEventListener('click', async () => {
       const snap = getBuilderSnapshot();
-      if (!snap.name) {
-        alert('Enter a meal name before saving.');
-        return;
-      }
       if (!snap.items.length) {
         alert('Add at least one food to the meal before saving.');
         return;
       }
 
+      const resolvedName = deriveMealName(snap.name, snap.mealType, select);
+
       const body = new URLSearchParams();
-      body.set('name', snap.name);
+      body.set('name', resolvedName);
       body.set('meal_type', snap.mealType);
       body.set('items_json', JSON.stringify(snap.items.map(i => ({
         food_id: i.id,
@@ -684,7 +700,38 @@ function bindSavedMealTemplateActions() {
         return;
       }
 
-      window.location.reload();
+      const payload = await res.json();
+      if (!payload?.ok || !payload?.id) {
+        alert('Saved meal response was incomplete.');
+        return;
+      }
+
+      const calories = Number(payload.calories ?? computeSnapshotCalories(snap.items));
+      const label = `${payload.name} (${capitalizeText(payload.meal_type)} · ${Math.round(calories)} kcal)`;
+
+      if (select) {
+        let option = Array.from(select.options).find((o) => o.value === payload.id);
+        if (!option) {
+          option = document.createElement('option');
+          select.appendChild(option);
+        }
+        option.value = payload.id;
+        option.textContent = label;
+        option.dataset.name = payload.name;
+        option.dataset.mealType = payload.meal_type;
+        option.dataset.calories = String(Math.round(calories));
+        select.value = payload.id;
+      }
+
+      const mealNameInput = document.getElementById('meal-name');
+      if (mealNameInput && !mealNameInput.value.trim()) {
+        mealNameInput.value = payload.name;
+      }
+
+      const mealTypeSelect = document.querySelector('#meal-form select[name="meal_type"]');
+      if (mealTypeSelect && payload.meal_type) {
+        mealTypeSelect.value = payload.meal_type;
+      }
     });
   }
 
@@ -726,6 +773,22 @@ function bindSavedMealTemplateActions() {
         mealTypeSelect.value = data.meal_type;
       }
       renderMealBuilder();
+    });
+  }
+
+  if (select) {
+    select.addEventListener('change', () => {
+      const mealNameInput = document.getElementById('meal-name');
+      const mealTypeSelect = document.querySelector('#meal-form select[name="meal_type"]');
+      const opt = select.options[select.selectedIndex];
+      if (!opt || !opt.value) return;
+
+      if (mealNameInput && !mealNameInput.value.trim() && opt.dataset.name) {
+        mealNameInput.value = opt.dataset.name;
+      }
+      if (mealTypeSelect && opt.dataset.mealType) {
+        mealTypeSelect.value = opt.dataset.mealType;
+      }
     });
   }
 

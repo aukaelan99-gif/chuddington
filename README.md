@@ -46,7 +46,7 @@ Example:
 
 ```bash
 git clone https://github.com/aukaelan99-gif/chuddington.git
-cd chuddington/studywell
+cd chuddington/chudlite
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -60,7 +60,7 @@ Then open:
 ## Project Structure
 
 ```text
-studywell/
+chudlite/
   main.py
   database.py
   models.py
